@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Investment.API/Investment.API.csproj" />
+    <Project Path="src/Investment.Application/Investment.Application.csproj" />
+    <Project Path="src/Investment.Domain/Investment.Domain.csproj" />
+    <Project Path="src/Investment.Infrastructure/Investment.Infrastructure.csproj" />
+    <!-- <Project Path="src/Investment.MAUI/Investment.MAUI.csproj" /> -->
+  </Folder>
+</Solution>

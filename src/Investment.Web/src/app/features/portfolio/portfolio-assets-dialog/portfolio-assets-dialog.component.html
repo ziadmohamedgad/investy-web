@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>أصول المحفظة</h2>
+
+<div mat-dialog-content>
+  <mat-selection-list>
+    <mat-list-option
+      *ngFor="let asset of data.assets"
+      [selected]="selectedIds.has(asset.assetId)"
+      (selectedChange)="toggle(asset.assetId, $event)">
+      {{ asset.assetCode }} — {{ asset.assetName }}
+    </mat-list-option>
+  </mat-selection-list>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">إلغاء</button>
+  <button mat-raised-button color="primary" (click)="submit()">حفظ</button>
+</div>

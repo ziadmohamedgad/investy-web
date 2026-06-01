@@ -1,0 +1,40 @@
+# Build output
+**/bin/
+**/obj/
+**/TestResults/
+
+# .NET user/local files
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local settings and secrets
+src/Investment.API/appsettings.Development.json
+src/Investment.API/appsettings.Local.json
+src/Investment.API/appsettings.*.local.json
+
+# Local data and exports
+Investy.xlsx
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+*.bak
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

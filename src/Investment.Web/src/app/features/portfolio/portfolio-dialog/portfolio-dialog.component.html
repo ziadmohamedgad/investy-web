@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>{{ data.mode === 'create' ? 'محفظة جديدة' : 'تعديل محفظة' }}</h2>
+
+<div mat-dialog-content>
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field appearance="outline" class="field">
+      <mat-label>اسم المحفظة</mat-label>
+      <input matInput formControlName="name" placeholder="مثال: استثمار طويل الأجل" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="field">
+      <mat-label>الوصف (اختياري)</mat-label>
+      <textarea matInput rows="3" formControlName="description"></textarea>
+    </mat-form-field>
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">إلغاء</button>
+  <button mat-raised-button color="primary" (click)="submit()">حفظ</button>
+</div>

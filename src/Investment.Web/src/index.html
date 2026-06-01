@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Investy</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3">
+  <link rel="alternate icon" type="image/x-icon" href="favicon.ico?v=3">
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('investment-web-theme');
+        var isDarkMode = theme === 'dark';
+
+        document.documentElement.classList.toggle('dark-theme', isDarkMode);
+        document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+      } catch (error) {
+        // Ignore storage access failures and leave the default theme in place.
+      }
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Changa:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="mat-typography">
+  <app-root></app-root>
+</body>
+</html>

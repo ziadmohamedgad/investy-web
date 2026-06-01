@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>{{ data.mode === 'create' ? 'سهم' : 'تعديل معاملة' }}</h2>
+
+<div mat-dialog-content>
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field appearance="outline" class="field">
+      <mat-label>ابحث عن أصل</mat-label>
+      <input matInput type="text" formControlName="assetQuery" [matAutocomplete]="assetAuto" (input)="sanitizeAssetQuery()" />
+      <mat-autocomplete #assetAuto="matAutocomplete" (optionSelected)="onAssetSelected($event.option.value)">
+        <mat-option *ngFor="let a of searchResults" [value]="a">
+          {{ displayAsset(a) }}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>النوع</mat-label>
+        <mat-select formControlName="transactionType">
+          <mat-option *ngFor="let t of transactionTypes" [value]="t.value">{{ t.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>التاريخ</mat-label>
+        <input matInput type="date" formControlName="transactionDate" />
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>{{ quantityLabel }}</mat-label>
+        <input matInput type="number" formControlName="quantity" step="0.0001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      </mat-form-field>
+
+      <mat-form-field *ngIf="!isDailyAccrualFundSelected" appearance="outline" class="field">
+        <mat-label>{{ priceLabel }}</mat-label>
+        <input matInput type="number" formControlName="pricePerUnit" step="0.00001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field *ngIf="isGoldSelected" appearance="outline" class="field">
+      <mat-label>{{ goldAdjustmentLabel }}</mat-label>
+      <input matInput type="number" formControlName="manufacturingFeePerGram" step="0.00001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+    </mat-form-field>
+
+    <mat-form-field *ngIf="!isDailyAccrualFundSelected" appearance="outline" class="field">
+      <mat-label>الرسوم</mat-label>
+      <input matInput type="number" formControlName="fees" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      <mat-error *ngIf="form.get('fees')?.hasError('min')">الرسوم لا يمكن أن تكون سالبة</mat-error>
+    </mat-form-field>
+
+
+  </form>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">إلغاء</button>
+  <button mat-raised-button color="primary" (click)="submit()">حفظ</button>
+</div>
+

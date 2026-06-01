@@ -1,0 +1,263 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.header-actions {
+  position: relative;
+}
+
+.header-actions > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.header-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+:host-context(html[dir='rtl']) .header-buttons {
+  justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+  .header-buttons {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-buttons button {
+    width: 100%;
+  }
+}
+
+.glass-panel.table-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+:host ::ng-deep .transactions-table {
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    padding: 0.85rem 1rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .mat-mdc-header-cell {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .mat-mdc-cell {
+    color: var(--text-primary);
+  }
+
+  .mat-mdc-header-row {
+    background: rgba(37, 99, 235, 0.04);
+  }
+
+  .mat-mdc-row:hover {
+    background: rgba(37, 99, 235, 0.04);
+  }
+}
+
+.type-buy { color: var(--accent); font-weight: 500; }
+.type-sell { color: var(--danger); font-weight: 500; }
+
+.asset-code {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+}
+
+.asset-code-stock {
+  color: var(--text-primary);
+}
+
+.asset-code-gold {
+  color: var(--warning);
+}
+
+.asset-code-non-stock {
+  color: #2563eb;
+}
+
+:host-context(.dark-theme) .asset-code-stock {
+  color: var(--text-primary);
+}
+
+:host-context(.dark-theme) .asset-code-gold {
+  color: #fbbf24;
+}
+
+:host-context(.dark-theme) .asset-code-non-stock {
+  color: #60a5fa;
+}
+
+.page-meta {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.header-actions > .page-meta {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.table-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.table-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  min-width: 120px;
+  text-align: center;
+  justify-self: center;
+}
+
+.pager-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.pager-actions button {
+  min-width: 120px;
+  border-radius: 12px;
+}
+
+.pager-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--border-color);
+  color: var(--text-muted);
+}
+
+:host ::ng-deep .pager-actions button.next-btn .mdc-button__label,
+:host ::ng-deep .pager-actions button.next-btn .mat-button-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+:host ::ng-deep .pager-actions button.prev-btn .mdc-button__label,
+:host ::ng-deep .pager-actions button.prev-btn .mat-button-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+.hidden-paginator {
+  display: none;
+}
+
+.page-error,
+.sync-success {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.page-error {
+  color: #b45309;
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.sync-success {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.action-button {
+  color: var(--text-muted);
+  border-radius: 999px;
+}
+
+.action-button .mat-icon {
+  width: 19px;
+  height: 19px;
+  font-size: 19px;
+  line-height: 19px;
+}
+
+.edit-action:hover {
+  background: rgba(37, 99, 235, 0.11);
+  color: #2563eb;
+}
+
+.delete-action:hover {
+  background: rgba(220, 38, 38, 0.11);
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .table-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-meta {
+    position: static;
+    transform: none;
+    width: fit-content;
+  }
+
+  .pager-actions {
+    width: 100%;
+    flex-direction: column;
+    direction: rtl;
+  }
+
+  .pager-actions button {
+    flex: 1;
+  }
+
+  .table-hint {
+    min-width: unset;
+  }
+}

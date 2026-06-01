@@ -1,0 +1,100 @@
+<div *ngIf="loading" class="page-shell loading-container">
+  <mat-spinner diameter="48"></mat-spinner>
+</div>
+
+<div *ngIf="!loading && error" class="p-4 text-center text-muted">
+  {{ error }}
+</div>
+
+<div class="page-shell" *ngIf="!loading">
+  <div class="dashboard-header">
+    <div>
+      <h1 class="text-gradient">لوحة التحكم</h1>
+      <p class="text-muted">مرحبًا بعودتك! هذه نظرة عامة على محفظتك.</p>
+    </div>
+  </div>
+
+  <div class="summary-cards">
+    <div class="glass-panel summary-card">
+      <div class="card-title">إجمالي المدفوع</div>
+      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalInvestedCapital | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <mat-icon class="card-icon">savings</mat-icon>
+    </div>
+
+    <div class="glass-panel summary-card">
+      <div class="card-title">إجمالي القيمة</div>
+      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalCurrentValue | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <mat-icon class="card-icon">account_balance_wallet</mat-icon>
+    </div>
+
+    <div class="glass-panel summary-card" [ngClass]="{'success': summaryTotals.totalUnrealizedPnL >= 0, 'danger': summaryTotals.totalUnrealizedPnL < 0}">
+      <div class="card-title">الربح/الخسارة غير المحققة</div>
+      <div class="card-value d-flex align-items-center gap-1">
+        <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalUnrealizedPnL | currency:'EGP':'symbol':'1.2-2' }}</span>
+        <span [class.text-positive]="summaryTotals.totalUnrealizedPnL >= 0" [class.text-negative]="summaryTotals.totalUnrealizedPnL < 0" style="font-size: 1rem;">
+          (<span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalUnrealizedPnLPercent | number:'1.2-2' }}</span>%)
+        </span>
+      </div>
+      <mat-icon class="card-icon">trending_up</mat-icon>
+    </div>
+
+    <div class="glass-panel summary-card success">
+      <div class="card-title">الربح/الخسارة المحققة</div>
+      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalRealizedPnL | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <mat-icon class="card-icon">monetization_on</mat-icon>
+    </div>
+  </div>
+
+  <div class="charts-section">
+    <div class="glass-panel chart-card">
+      <div class="card-header">
+        <div>
+          <h3>توزيع الأصول</h3>
+          <p class="chart-hint text-muted">اضغط على أي شريحة أو اسم لتضمينه أو استبعاده من التحليل.</p>
+        </div>
+        <button *ngIf="hasCustomSelection()" mat-button type="button" (click)="resetSelection()">
+          عرض الكل
+        </button>
+      </div>
+      <div class="chart-layout">
+        <div class="chart-container">
+          <canvas *ngIf="holdings.length > 0" baseChart
+            [data]="pieChartData"
+            [options]="pieChartOptions"
+            [type]="'doughnut'"
+            (click)="onChartCanvasClick($event)">
+          </canvas>
+          <div *ngIf="holdings.length === 0" class="text-muted">
+            لا توجد حيازات لعرضها.
+          </div>
+        </div>
+
+        <div *ngIf="holdings.length > 0" class="asset-controls">
+          <div *ngIf="assetTypeFilters.length > 1" class="asset-type-filters" aria-label="مرشحات أنواع الأصول">
+            <button
+              *ngFor="let filter of assetTypeFilters"
+              type="button"
+              class="asset-type-filter"
+              [class.is-active]="isAssetTypeFilterActive(filter)"
+              (click)="toggleAssetType(filter)">
+              <span>{{ filter.label }}</span>
+              <b>{{ filter.count }}</b>
+            </button>
+          </div>
+
+          <div class="asset-legend" aria-label="Asset selection legend">
+            <button
+              *ngFor="let holding of holdings; let index = index"
+              type="button"
+              class="asset-legend-item"
+              [class.is-disabled]="!isAssetSelected(holding.assetCode)"
+              (click)="toggleAssetByCode(holding.assetCode)">
+              <span class="legend-swatch" [style.backgroundColor]="getChartColor(index, holding.assetCode)"></span>
+              <span class="legend-text">{{ holding.assetCode }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

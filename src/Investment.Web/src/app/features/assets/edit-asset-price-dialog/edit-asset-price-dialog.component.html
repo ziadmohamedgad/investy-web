@@ -1,0 +1,32 @@
+<h2 mat-dialog-title>{{ isDailyAccrualFund ? 'تعديل النسبة السنوية' : 'تعديل السعر الحالي' }}</h2>
+
+<mat-dialog-content>
+  <p class="dialog-hint text-muted">
+    {{ data.asset.assetCode }} — {{ data.asset.assetName }}
+  </p>
+
+  <form [formGroup]="form" class="dialog-form">
+    <mat-form-field *ngIf="showPriceInput" appearance="outline" class="field">
+      <mat-label>السعر الحالي</mat-label>
+      <input matInput type="number" formControlName="price" min="0" step="0.00001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      <mat-error *ngIf="form.get('price')?.hasError('required')">السعر مطلوب</mat-error>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="isGold" appearance="outline" class="field">
+      <mat-label>الكاش باك للجرام</mat-label>
+      <input matInput type="number" formControlName="goldCashbackPerGram" min="0" step="0.00001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      <mat-error *ngIf="form.get('goldCashbackPerGram')?.hasError('min')">القيمة لا يمكن أن تكون سالبة</mat-error>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="isDailyAccrualFund" appearance="outline" class="field">
+      <mat-label>النسبة المئوية السنوية</mat-label>
+      <input matInput type="number" formControlName="dailyAccrualAnnualRatePercent" min="0" step="0.01" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      <mat-error *ngIf="form.get('dailyAccrualAnnualRatePercent')?.hasError('min')">النسبة يجب أن تكون أكبر من صفر</mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">إلغاء</button>
+  <button mat-raised-button color="primary" type="button" (click)="submit()">حفظ</button>
+</mat-dialog-actions>

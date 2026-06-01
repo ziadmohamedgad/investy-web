@@ -1,0 +1,15 @@
+.dialog-hint {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(100%, 320px);
+}
+
+.field {
+  width: 100%;
+}

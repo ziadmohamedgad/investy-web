@@ -1,0 +1,308 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.assets-state {
+  padding: 0;
+  direction: rtl;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.header-actions > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.page-meta {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.header-actions > .page-meta {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.empty {
+  padding: 1rem;
+  color: #6b7280;
+}
+
+.glass-panel.table-container {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.assets-table .mat-mdc-header-cell,
+.assets-table .mat-mdc-cell,
+th,
+td {
+  padding: 0.85rem 1rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.assets-table .mat-mdc-header-cell,
+.assets-table .mat-mdc-cell {
+  justify-content: center;
+}
+
+th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+td {
+  color: var(--text-primary);
+}
+
+.asset-code {
+  display: inline-block;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+}
+
+.asset-code-stock {
+  color: var(--text-primary);
+}
+
+.asset-code-gold {
+  color: var(--warning);
+}
+
+.asset-code-fund {
+  color: #2563eb;
+}
+
+.asset-code-other {
+  color: #0f766e;
+}
+
+:host-context(.dark-theme) .asset-code-stock {
+  color: var(--text-primary);
+}
+
+:host-context(.dark-theme) .asset-code-gold {
+  color: #fbbf24;
+}
+
+:host-context(.dark-theme) .asset-code-fund {
+  color: #60a5fa;
+}
+
+:host-context(.dark-theme) .asset-code-other {
+  color: #38bdf8;
+}
+
+tr.mat-mdc-header-row {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+tr.mat-mdc-row:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.table-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.table-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  min-width: 120px;
+  text-align: center;
+  justify-self: center;
+}
+
+.pager-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.pager-actions button {
+  min-width: 120px;
+  border-radius: 12px;
+}
+
+.pager-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--border-color);
+  color: var(--text-muted);
+}
+
+:host ::ng-deep .pager-actions button.next-btn .mdc-button__label,
+:host ::ng-deep .pager-actions button.next-btn .mat-button-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+:host ::ng-deep .pager-actions button.prev-btn .mdc-button__label,
+:host ::ng-deep .pager-actions button.prev-btn .mat-button-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-direction: row;
+}
+
+.pager-actions .pager-decor {
+  opacity: 0.4;
+  font-weight: 300;
+  font-size: 1.1rem;
+  margin: 0 2px;
+  user-select: none;
+}
+.hidden-paginator {
+  display: none;
+}
+
+.profit {
+  color: #16a34a;
+}
+
+.loss {
+  color: #dc2626;
+}
+
+.profit-row {
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.loss-row {
+  background: rgba(220, 38, 38, 0.03);
+}
+
+.actions-cell {
+  white-space: nowrap;
+  text-align: center;
+  min-width: 132px;
+}
+
+.asset-actions {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 78px;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-color) 78%, transparent);
+}
+
+.asset-actions.has-sync {
+  min-width: 116px;
+}
+
+.asset-actions .action-button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  color: var(--text-muted);
+}
+
+.asset-actions .action-button .mat-icon {
+  width: 19px;
+  height: 19px;
+  font-size: 19px;
+  line-height: 19px;
+}
+
+.asset-actions .edit-action:hover {
+  background: rgba(37, 99, 235, 0.11);
+  color: #2563eb;
+}
+
+.asset-actions .sync-action:hover {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
+.asset-actions .delete-action:hover {
+  background: rgba(220, 38, 38, 0.11);
+  color: #dc2626;
+}
+
+.asset-actions .action-button:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+  .header-actions,
+  .table-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-meta {
+    position: static;
+    transform: none;
+    width: fit-content;
+  }
+
+  .pager-actions {
+    width: 100%;
+    flex-direction: column;
+    direction: rtl;
+  }
+
+  .pager-actions button {
+    flex: 1;
+  }
+
+  .table-hint {
+    min-width: unset;
+  }
+}

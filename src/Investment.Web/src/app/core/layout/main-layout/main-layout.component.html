@@ -1,0 +1,96 @@
+<div class="layout-container">
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="text-gradient brand-name">إنڤيستي</span>
+      <mat-icon>stacked_line_chart</mat-icon>
+    </div>
+    
+    <div class="toggle-actions-row">
+      <button mat-button (click)="toggleTheme()" class="glass-panel layout-toggle-button theme-toggle-button" style="flex: 1;">
+        <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        <span>{{ isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي' }}</span>
+      </button>
+      <button
+        mat-icon-button
+        disableRipple
+        (click)="toggleBalances()"
+        class="glass-panel layout-toggle-button icon-toggle-button"
+        [class.is-active]="hideBalances$ | async"
+        [attr.aria-label]="(hideBalances$ | async) ? 'إظهار الأرصدة' : 'إخفاء الأرصدة'"
+        [attr.title]="(hideBalances$ | async) ? 'إظهار الأرصدة' : 'إخفاء الأرصدة'">
+        <mat-icon>{{ (hideBalances$ | async) ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+    </div>
+    
+    <nav class="nav-links">
+      <a routerLink="/dashboard" routerLinkActive="active">
+        لوحة التحكم
+        <mat-icon>dashboard</mat-icon>
+      </a>
+        <a routerLink="/assets-state" routerLinkActive="active">
+          الأصول
+          <mat-icon>inventory_2</mat-icon>
+        </a>
+      <a routerLink="/transactions" routerLinkActive="active">
+        المعاملات
+        <mat-icon>receipt_long</mat-icon>
+      </a>
+    </nav>
+
+    <div class="sidebar-sync glass-panel">
+      <div class="sidebar-sync-title">
+        <mat-icon>cloud</mat-icon>
+        <span>مزامنة الأسعار</span>
+      </div>
+
+      <button mat-raised-button color="primary" type="button" (click)="syncPrices()" [disabled]="syncingPrices || isSyncDisabled">
+        <mat-icon>{{ syncingPrices ? 'hourglass_top' : 'sync' }}</mat-icon>
+        <span>{{ syncingPrices ? 'جاري المزامنة' : 'مزامنة' }}</span>
+      </button>
+
+      <button
+        *ngIf="providerStatus?.hasApiKey === false"
+        mat-button
+        type="button"
+        class="api-key-sidebar-button"
+        (click)="configureApiKey()">
+        <mat-icon>vpn_key</mat-icon>
+        <span>إضافة مفتاح EODHD</span>
+      </button>
+
+      <div class="sync-metrics" *ngIf="providerStatus">
+        <span>مرات المزامنة المتاحة: {{ availableSyncClicks }}</span>
+        <span>المتبقي الإجمالي من الطلبات: {{ remaining }}</span>
+        <span>كل مزامنة كاملة تستخدم {{ estimatedCallsPerSync }} طلب (أسهم فقط)</span>
+        <ng-container *ngIf="providerStatus.keys?.length">
+          <span class="sync-key-metric" *ngFor="let key of providerStatus.keys">
+            {{ key.label }}: متبقي {{ key.remaining }} (مستخدم {{ key.apiRequestsUsedToday }} / {{ key.dailyRateLimit + key.extraLimit }})
+          </span>
+        </ng-container>
+        <span *ngIf="!providerStatus.keys?.length">
+          المستخدم اليوم: {{ providerStatus.apiRequestsUsedToday }} | اليومي: {{ providerStatus.dailyRateLimit }} | الإضافي: {{ providerStatus.extraLimit }}
+        </span>
+      </div>
+
+      <div class="sync-metrics" *ngIf="providerLoading && !providerStatus">
+        <span>جاري تحميل بيانات الحصة...</span>
+      </div>
+
+      <div class="sync-metrics" *ngIf="!providerLoading && !providerStatus">
+        <span>تعذر تحميل بيانات الحصة.</span>
+      </div>
+
+      <div *ngIf="isSyncDisabled && !providerLoading && providerStatus && estimatedCallsPerSync > 0" class="sync-warning">
+        المتبقي لا يكفي لمزامنة كاملة.
+      </div>
+
+      <div *ngIf="syncError" class="sync-warning">{{ syncError }}</div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
