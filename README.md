@@ -66,19 +66,3 @@ Do not commit:
 - SQL Server backups, `.mdf`, `.ldf`, `.db`, `.sqlite`, or exported `Investy.xlsx` files.
 
 For local experiments, use environment variables, user secrets, or the in-app EODHD key prompt.
-
-## Suggested GitHub Setup
-
-From the project root:
-
-```powershell
-git init
-git add .
-git status
-git commit -m "Initial Investy Web commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USER/investy-web.git
-git push -u origin main
-```
-
-Before pushing, run `git status` and make sure no local database files, Excel exports, `bin/`, `obj/`, or real API keys are staged.

@@ -62,14 +62,7 @@
         <span>مرات المزامنة المتاحة: {{ availableSyncClicks }}</span>
         <span>المتبقي الإجمالي من الطلبات: {{ remaining }}</span>
         <span>كل مزامنة كاملة تستخدم {{ estimatedCallsPerSync }} طلب (أسهم فقط)</span>
-        <ng-container *ngIf="providerStatus.keys?.length">
-          <span class="sync-key-metric" *ngFor="let key of providerStatus.keys">
-            {{ key.label }}: متبقي {{ key.remaining }} (مستخدم {{ key.apiRequestsUsedToday }} / {{ key.dailyRateLimit + key.extraLimit }})
-          </span>
-        </ng-container>
-        <span *ngIf="!providerStatus.keys?.length">
-          المستخدم اليوم: {{ providerStatus.apiRequestsUsedToday }} | اليومي: {{ providerStatus.dailyRateLimit }} | الإضافي: {{ providerStatus.extraLimit }}
-        </span>
+        <span>المستخدم: {{ providerStatus.apiRequestsUsedToday }} / {{ providerStatus.totalAvailable }}</span>
       </div>
 
       <div class="sync-metrics" *ngIf="providerLoading && !providerStatus">

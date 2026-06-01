@@ -96,7 +96,10 @@ public class PriceProvidersController : ControllerBase
             ApiRequestsUsedToday = EodhdPriceFetcher.GetApiRequestsUsedToday(info),
             info.DailyRateLimit,
             info.ExtraLimit,
-            Remaining = EodhdPriceFetcher.CalculateRemaining(info)
+            TotalAvailable = info.DailyRateLimit + info.ExtraLimit,
+            Remaining = EodhdPriceFetcher.CalculateRemaining(info),
+            KeyCount = 1,
+            Keys = Array.Empty<object>()
         });
     }
 

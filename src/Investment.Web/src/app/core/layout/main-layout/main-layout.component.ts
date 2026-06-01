@@ -113,7 +113,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       }
 
       this.clearEodhdPromptDismissed();
-      this.loadProviderStatus();
+      this.applyProviderStatus(saved);
       this.refreshService.notify('prices:changed');
     });
   }
@@ -159,8 +159,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       timeout(5000),
       catchError(() => of(null as PriceProviderStatus | null))
     ).subscribe(status => {
-      this.providerStatus = status;
-      this.providerLoading = false;
+      this.applyProviderStatus(status);
     });
   }
 
@@ -187,7 +186,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       dialogRef.afterClosed().subscribe((saved) => {
         if (saved) {
           this.clearEodhdPromptDismissed();
-          this.loadProviderStatus();
+          this.applyProviderStatus(saved);
+          this.refreshService.notify('prices:changed');
           return;
         }
 
@@ -218,6 +218,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     } catch {
       // Ignore storage failures and keep the in-memory theme state.
     }
+  }
+
+  private applyProviderStatus(status: PriceProviderStatus | null): void {
+    this.providerStatus = status;
+    this.providerLoading = false;
   }
 
   private wasEodhdPromptDismissed(): boolean {

@@ -32,17 +32,12 @@ public class EodhdPriceFetcher
     {
         var keys = new List<string>();
         var dbKeys = await _context.AppSettings
-            .Where(s => s.SettingKey == "EodhdApiKey" || s.SettingKey == "EodhdApiKey2")
-            .OrderBy(s => s.SettingKey == "EodhdApiKey" ? 0 : 1)
+            .Where(s => s.SettingKey == "EodhdApiKey")
             .Select(s => s.SettingValue)
             .ToListAsync();
 
         AddKeys(keys, dbKeys);
-        AddKeys(keys, new[]
-        {
-            _configuration["PriceProviders:EodhdApiKey"],
-            _configuration["PriceProviders:EodhdApiKey2"]
-        });
+        AddKeys(keys, new[] { _configuration["PriceProviders:EodhdApiKey"] });
 
         return keys;
     }
