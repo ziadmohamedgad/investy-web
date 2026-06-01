@@ -14,6 +14,8 @@ import { ConfirmDeleteDialogComponent } from '../../shared/confirm-delete-dialog
 import { RefreshService } from '../../core/services/refresh.service';
 import { AssetSummary } from '../../core/models/models';
 import { BalanceVisibilityService } from '../../core/services/balance-visibility.service';
+import { PriceProvidersService } from '../../core/services/price-providers.service';
+import { EodhdApiKeyDialogComponent } from '../../shared/eodhd-api-key-dialog/eodhd-api-key-dialog.component';
 import { Observable } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { forkJoin, of } from 'rxjs';
@@ -45,7 +47,8 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
     private cdr: ChangeDetectorRef,
     private refresh: RefreshService,
     private dialog: MatDialog,
-    private balanceVisibilityService: BalanceVisibilityService
+    private balanceVisibilityService: BalanceVisibilityService,
+    private priceProviders: PriceProvidersService
   ) {}
 
   ngOnInit(): void {
@@ -205,6 +208,44 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
 
     this.syncingAssetId = asset.assetId;
     this.error = null;
+    this.cdr.markForCheck();
+
+    this.priceProviders.getEodhdConfiguration().pipe(
+      timeout(5000),
+      catchError(() => of({ hasApiKey: true }))
+    ).subscribe((configuration) => {
+      if (!configuration.hasApiKey) {
+        this.openApiKeyDialogBeforeSync(asset);
+        return;
+      }
+
+      this.runAssetPriceSync(asset);
+    });
+  }
+
+  private openApiKeyDialogBeforeSync(asset: AssetSummary): void {
+    const dialogRef = this.dialog.open(EodhdApiKeyDialogComponent, {
+      width: '460px',
+      maxWidth: '92vw',
+      panelClass: 'eodhd-api-key-dialog-panel',
+      backdropClass: 'confirm-delete-backdrop',
+      autoFocus: '#eodhd-api-key',
+      disableClose: false
+    });
+
+    dialogRef.afterClosed().subscribe((saved) => {
+      if (!saved) {
+        this.syncingAssetId = null;
+        this.cdr.markForCheck();
+        return;
+      }
+
+      this.refresh.notify('prices:changed');
+      this.runAssetPriceSync(asset);
+    });
+  }
+
+  private runAssetPriceSync(asset: AssetSummary): void {
     this.assetService.syncCurrentPrice(asset.assetId).subscribe({
       next: () => {
         this.syncingAssetId = null;

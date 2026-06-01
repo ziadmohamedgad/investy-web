@@ -15,7 +15,6 @@ import { BalanceVisibilityService } from '../../../core/services/balance-visibil
 import { EodhdApiKeyDialogComponent } from '../../../shared/eodhd-api-key-dialog/eodhd-api-key-dialog.component';
 
 const themeStorageKey = 'investment-web-theme';
-const eodhdPromptDismissedKey = 'investy-eodhd-prompt-dismissed';
 
 @Component({
   selector: 'app-main-layout',
@@ -34,6 +33,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private refreshSub?: Subscription;
   isDarkMode = false;
   hideBalances$!: Observable<boolean>;
+  private eodhdPromptDismissedForSession = false;
 
   constructor(
     private priceFetchService: PriceFetchService, 
@@ -101,9 +101,11 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   configureApiKey(): void {
     const dialogRef = this.dialog.open(EodhdApiKeyDialogComponent, {
-      width: '500px',
+      width: '460px',
       maxWidth: '92vw',
       panelClass: 'eodhd-api-key-dialog-panel',
+      backdropClass: 'confirm-delete-backdrop',
+      autoFocus: '#eodhd-api-key',
       disableClose: false
     });
 
@@ -112,7 +114,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.clearEodhdPromptDismissed();
+      this.eodhdPromptDismissedForSession = false;
       this.applyProviderStatus(saved);
       this.refreshService.notify('prices:changed');
     });
@@ -164,7 +166,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   private checkEodhdSetup(): void {
-    if (this.wasEodhdPromptDismissed()) {
+    if (this.eodhdPromptDismissedForSession) {
       return;
     }
 
@@ -177,15 +179,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       }
 
       const dialogRef = this.dialog.open(EodhdApiKeyDialogComponent, {
-        width: '500px',
+        width: '460px',
         maxWidth: '92vw',
         panelClass: 'eodhd-api-key-dialog-panel',
+        backdropClass: 'confirm-delete-backdrop',
+        autoFocus: '#eodhd-api-key',
         disableClose: false
       });
 
       dialogRef.afterClosed().subscribe((saved) => {
         if (saved) {
-          this.clearEodhdPromptDismissed();
           this.applyProviderStatus(saved);
           this.refreshService.notify('prices:changed');
           return;
@@ -225,27 +228,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.providerLoading = false;
   }
 
-  private wasEodhdPromptDismissed(): boolean {
-    try {
-      return localStorage.getItem(eodhdPromptDismissedKey) === 'true';
-    } catch {
-      return false;
-    }
-  }
-
   private dismissEodhdPrompt(): void {
-    try {
-      localStorage.setItem(eodhdPromptDismissedKey, 'true');
-    } catch {
-      // Ignore storage failures.
-    }
-  }
-
-  private clearEodhdPromptDismissed(): void {
-    try {
-      localStorage.removeItem(eodhdPromptDismissedKey);
-    } catch {
-      // Ignore storage failures.
-    }
+    this.eodhdPromptDismissedForSession = true;
   }
 }
