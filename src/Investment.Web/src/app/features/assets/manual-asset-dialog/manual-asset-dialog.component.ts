@@ -1,18 +1,23 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { Asset, CreateManualAssetDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
+import { Asset, AssetSummary, CreateManualAssetDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
 import { AssetService } from '../../../core/services/asset.service';
-import { TransactionService } from '../../../core/services/transaction.service';
 import { BalanceVisibilityService } from '../../../core/services/balance-visibility.service';
-import { Observable, combineLatest, forkJoin, of } from 'rxjs';
+import { Observable, combineLatest, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/operators';
+
+export interface ManualAssetDialogData {
+  knownAssets?: Asset[];
+  knownTransactions?: Transaction[];
+  assetSummaries?: AssetSummary[];
+}
 
 @Component({
   selector: 'app-manual-asset-dialog',
@@ -62,8 +67,8 @@ export class ManualAssetDialogComponent implements OnInit {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<ManualAssetDialogComponent, CreateManualAssetDraft | undefined>,
     private assetService: AssetService,
-    private transactionService: TransactionService,
-    private balanceVisibilityService: BalanceVisibilityService
+    private balanceVisibilityService: BalanceVisibilityService,
+    @Inject(MAT_DIALOG_DATA) private data: ManualAssetDialogData | null
   ) {
     this.hideBalances$ = this.balanceVisibilityService.hidden$;
     this.form = this.fb.group({
@@ -240,6 +245,39 @@ export class ManualAssetDialogComponent implements OnInit {
     });
   }
 
+  get sellNetInvalid(): boolean {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount <= 0;
+  }
+
+  get transactionNetAmount(): number {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    const price = this.isDailyAccrualFundSelected ? 1 : Number(this.form.get('pricePerUnit')?.value ?? 0);
+    const fees = this.isDailyAccrualFundSelected ? 0 : Number(this.form.get('fees')?.value ?? 0);
+    const goldAdjustment = this.isGoldSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
+    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + goldAdjustment;
+
+    return this.form.get('transactionType')?.value === 'Buy'
+      ? gross + fees
+      : gross - fees;
+  }
+
+  get transactionTotalLabel(): string {
+    return this.transactionNetAmount.toLocaleString('ar-EG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  get submitLabel(): string {
+    const isBuy = this.form.get('transactionType')?.value === 'Buy';
+    if (this.isDailyAccrualFundSelected) {
+      return isBuy ? 'إيداع' : 'سحب';
+    }
+
+    return isBuy ? 'شراء' : 'بيع';
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboardShortcut(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
@@ -255,7 +293,7 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid || this.sellExceedsAvailable) {
+    if (this.form.invalid || this.sellExceedsAvailable || this.sellNetInvalid) {
       this.form.markAllAsTouched();
       return;
     }
@@ -318,36 +356,28 @@ export class ManualAssetDialogComponent implements OnInit {
     if (!code) {
       this.sellAllowed = false;
       this.availableSellAmount = 0;
+      this.sellAvailabilityLoading = false;
       this.ensureTransactionTypeAllowed();
       return;
     }
 
-    this.sellAvailabilityLoading = true;
-    forkJoin([this.assetService.getAll(), this.transactionService.getAll()]).subscribe({
-      next: ([assets, transactions]) => {
-        const existingAsset = assets.find((item) => item.assetCode.trim().toUpperCase() === code);
-        if (!existingAsset) {
-          this.sellAllowed = false;
-          this.availableSellAmount = 0;
-          this.ensureTransactionTypeAllowed();
-          return;
-        }
+    const assets = this.data?.knownAssets ?? [];
+    const transactions = this.data?.knownTransactions ?? [];
+    const existingAsset = assets.find((item) => item.assetCode.trim().toUpperCase() === code);
 
-        const existingTransactions = transactions.filter((transaction) => transaction.assetId === existingAsset.assetId);
-        this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
-        this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
-        this.ensureTransactionTypeAllowed();
-      },
-      error: () => {
-        this.sellAllowed = false;
-        this.availableSellAmount = 0;
-        this.sellAvailabilityLoading = false;
-        this.ensureTransactionTypeAllowed();
-      },
-      complete: () => {
-        this.sellAvailabilityLoading = false;
-      }
-    });
+    if (!existingAsset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.sellAvailabilityLoading = false;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    const existingTransactions = transactions.filter((transaction) => transaction.assetId === existingAsset.assetId);
+    this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
+    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
+    this.sellAvailabilityLoading = false;
+    this.ensureTransactionTypeAllowed();
   }
 
   private ensureTransactionTypeAllowed(): void {
@@ -357,6 +387,15 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   private calculateAvailableSellAmount(asset: Asset, transactions: Transaction[]): number {
+    const summary = (this.data?.assetSummaries ?? []).find((item) => item.assetId === asset.assetId);
+    if (summary && !asset.isDailyAccrualFund) {
+      return Math.max(0, summary.totalUnitsHeld);
+    }
+
+    if (summary && asset.isDailyAccrualFund) {
+      return Math.max(0, summary.currentValue);
+    }
+
     const sorted = [...transactions].sort((a, b) => {
       const dateDiff = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
       return dateDiff || a.transactionId - b.transactionId;
@@ -394,13 +433,15 @@ export class ManualAssetDialogComponent implements OnInit {
 
     return dates.length === 0
       ? new Date(asset.createdAt)
-      : new Date(Math.min(...dates.map((date) => date.setHours(0, 0, 0, 0))));
+      : new Date(Math.min(...dates.map((date) => new Date(date).setHours(0, 0, 0, 0))));
   }
 
   private getDailyAccrualUnitPrice(asset: Asset, asOf: Date, accrualStartDate: Date): number {
     const annualRate = asset.dailyAccrualAnnualRatePercent > 0 ? asset.dailyAccrualAnnualRatePercent : 16;
     const dayMs = 24 * 60 * 60 * 1000;
-    const days = Math.max(0, (asOf.setHours(0, 0, 0, 0) - accrualStartDate.setHours(0, 0, 0, 0)) / dayMs);
+    const asOfDate = new Date(asOf);
+    const startDate = new Date(accrualStartDate);
+    const days = Math.max(0, (asOfDate.setHours(0, 0, 0, 0) - startDate.setHours(0, 0, 0, 0)) / dayMs);
     return Number(Math.pow(1 + annualRate / 100, days / 365.25).toFixed(6));
   }
 

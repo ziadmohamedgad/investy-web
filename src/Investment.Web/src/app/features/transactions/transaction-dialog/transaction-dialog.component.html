@@ -53,12 +53,17 @@
       <mat-error *ngIf="form.get('fees')?.hasError('min')">الرسوم لا يمكن أن تكون سالبة</mat-error>
     </mat-form-field>
 
+    <div class="transaction-total" [class.is-danger]="sellExceedsAvailable || sellNetInvalid">
+      <span>إجمالي العملية</span>
+      <strong class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ transactionTotalLabel }} ج.م</strong>
+      <small *ngIf="sellNetInvalid">صافي البيع بعد الرسوم يجب أن يكون أكبر من صفر.</small>
+    </div>
 
   </form>
 </div>
 
 <div mat-dialog-actions align="end">
   <button mat-button (click)="cancel()">إلغاء</button>
-  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || sellExceedsAvailable">حفظ</button>
+  <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || sellExceedsAvailable || sellNetInvalid">{{ submitLabel }}</button>
 </div>
 

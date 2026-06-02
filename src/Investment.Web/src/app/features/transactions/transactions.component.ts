@@ -10,12 +10,12 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TransactionService } from '../../core/services/transaction.service';
 import { AssetService } from '../../core/services/asset.service';
 import { RefreshService } from '../../core/services/refresh.service';
-import { Transaction, CreateTransactionDraft, ExternalAssetSearchResult, CreateManualAssetDraft } from '../../core/models/models';
+import { Asset, AssetSummary, Transaction, CreateTransactionDraft, ExternalAssetSearchResult, CreateManualAssetDraft } from '../../core/models/models';
 import { TransactionDialogComponent, TransactionDialogData } from './transaction-dialog/transaction-dialog.component';
 import { ManualAssetDialogComponent } from '../assets/manual-asset-dialog/manual-asset-dialog.component';
 import { ConfirmDeleteDialogComponent } from '../../shared/confirm-delete-dialog/confirm-delete-dialog.component';
 import { BalanceVisibilityService } from '../../core/services/balance-visibility.service';
-import { catchError, finalize, map, switchMap, timeout } from 'rxjs/operators';
+import { catchError, finalize, switchMap, timeout } from 'rxjs/operators';
 import { forkJoin, Observable, of } from 'rxjs';
 
 @Component({
@@ -28,6 +28,8 @@ import { forkJoin, Observable, of } from 'rxjs';
 })
 export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   transactions: Transaction[] = [];
+  assets: Asset[] = [];
+  assetSummaries: AssetSummary[] = [];
   dataSource = new MatTableDataSource<Transaction>([]);
   pageSize = 7;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -107,20 +109,26 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loading = true;
     }
     this.loadError = null;
-    this.transactionService.getAll().pipe(
+    forkJoin({
+      transactions: this.transactionService.getAll(),
+      assets: this.assetService.getAll(),
+      summaries: this.assetService.getAllSummaries()
+    }).pipe(
       timeout(10000),
       catchError(() => {
         this.loadError = 'تعذر تحميل المعاملات.';
-        return of([] as Transaction[]);
+        return of({ transactions: [] as Transaction[], assets: [] as Asset[], summaries: [] as AssetSummary[] });
       }),
       finalize(() => {
         this.loading = false;
         this.cdr.markForCheck();
       })
-    ).subscribe((data) => {
-      this.transactions = data;
-      this.syncPaginator(data.length);
-      this.dataSource.data = data;
+    ).subscribe(({ transactions, assets, summaries }) => {
+      this.transactions = transactions;
+      this.assets = assets;
+      this.assetSummaries = summaries;
+      this.syncPaginator(transactions.length);
+      this.dataSource.data = transactions;
       this.refreshTable();
       this.cdr.markForCheck();
     });
@@ -143,7 +151,13 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openNewTransactionDialog(prefilledAsset?: ExternalAssetSearchResult): void {
-    const dialogData: TransactionDialogData = { mode: 'create', prefilledAsset };
+    const dialogData: TransactionDialogData = {
+      mode: 'create',
+      prefilledAsset,
+      knownAssets: this.assets,
+      knownTransactions: this.transactions,
+      assetSummaries: this.assetSummaries
+    };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',
       maxWidth: '95vw',
@@ -159,7 +173,12 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   openManualAssetDialog(): void {
     const dialogRef = this.dialog.open(ManualAssetDialogComponent, {
       width: '640px',
-      maxWidth: '95vw'
+      maxWidth: '95vw',
+      data: {
+        knownAssets: this.assets,
+        knownTransactions: this.transactions,
+        assetSummaries: this.assetSummaries
+      }
     });
 
     dialogRef.afterClosed().subscribe((result: CreateManualAssetDraft | undefined) => {
@@ -223,7 +242,13 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openEditTransactionDialog(transaction: Transaction): void {
-    const dialogData: TransactionDialogData = { mode: 'edit', transaction };
+    const dialogData: TransactionDialogData = {
+      mode: 'edit',
+      transaction,
+      knownAssets: this.assets,
+      knownTransactions: this.transactions,
+      assetSummaries: this.assetSummaries
+    };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',
       data: dialogData
@@ -302,19 +327,14 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const normalizedCode = assetCode.trim().toUpperCase();
-    return forkJoin([this.assetService.getAll(), this.transactionService.getAll()]).pipe(
-      map(([assets, transactions]) => {
-        const asset = assets.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
-        if (!asset) {
-          return false;
-        }
+    const asset = this.assets.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
+    if (!asset) {
+      return of(false);
+    }
 
-        return transactions.some((transaction) =>
-          transaction.assetId === asset.assetId && transaction.transactionType === 'Buy'
-        );
-      }),
-      catchError(() => of(false))
-    );
+    return of(this.transactions.some((transaction) =>
+      transaction.assetId === asset.assetId && transaction.transactionType === 'Buy'
+    ));
   }
 
   private firstSellBlockedMessage(isDailyAccrualFund?: boolean): string {

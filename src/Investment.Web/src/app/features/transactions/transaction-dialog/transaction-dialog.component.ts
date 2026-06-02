@@ -8,11 +8,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Asset, CreateTransactionDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
+import { Asset, AssetSummary, CreateTransactionDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
 import { AssetService } from '../../../core/services/asset.service';
-import { TransactionService } from '../../../core/services/transaction.service';
 import { BalanceVisibilityService } from '../../../core/services/balance-visibility.service';
-import { forkJoin, Observable, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 
 export type TransactionDialogMode = 'create' | 'edit';
@@ -22,6 +21,9 @@ export interface TransactionDialogData {
   transaction?: Transaction;
   /** Pre-select an asset when opening the stock transaction dialog after manual asset creation. */
   prefilledAsset?: ExternalAssetSearchResult;
+  knownAssets?: Asset[];
+  knownTransactions?: Transaction[];
+  assetSummaries?: AssetSummary[];
 }
 
 @Component({
@@ -65,7 +67,6 @@ export class TransactionDialogComponent {
   constructor(
     private fb: FormBuilder,
     private assetService: AssetService,
-    private transactionService: TransactionService,
     private balanceVisibilityService: BalanceVisibilityService,
     private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
@@ -161,7 +162,7 @@ export class TransactionDialogComponent {
   }
 
   submit(): void {
-    if (this.form.invalid || this.sellExceedsAvailable) {
+    if (this.form.invalid || this.sellExceedsAvailable || this.sellNetInvalid) {
       this.form.markAllAsTouched();
       return;
     }
@@ -303,6 +304,39 @@ export class TransactionDialogComponent {
     return quantity > 0 && this.availableSellAmount > 0 && quantity > this.availableSellAmount + 0.0000001;
   }
 
+  get sellNetInvalid(): boolean {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount <= 0;
+  }
+
+  get transactionNetAmount(): number {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    const price = this.isDailyAccrualFundSelected ? 1 : Number(this.form.get('pricePerUnit')?.value ?? 0);
+    const fees = this.isDailyAccrualFundSelected ? 0 : Number(this.form.get('fees')?.value ?? 0);
+    const goldAdjustment = this.isGoldSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
+    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + goldAdjustment;
+
+    return this.form.get('transactionType')?.value === 'Buy'
+      ? gross + fees
+      : gross - fees;
+  }
+
+  get transactionTotalLabel(): string {
+    return this.transactionNetAmount.toLocaleString('ar-EG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  get submitLabel(): string {
+    const isBuy = this.form.get('transactionType')?.value === 'Buy';
+    if (this.isDailyAccrualFundSelected) {
+      return isBuy ? 'إيداع' : 'سحب';
+    }
+
+    return isBuy ? 'شراء' : 'بيع';
+  }
+
   get availableSellLabel(): string {
     return this.availableSellAmount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -368,40 +402,26 @@ export class TransactionDialogComponent {
       return;
     }
 
-    this.sellAvailabilityLoading = true;
-    forkJoin([this.assetService.getAll(), this.transactionService.getAll()]).subscribe({
-      next: ([assets, transactions]) => {
-        const normalizedCode = asset.assetCode.trim().toUpperCase();
-        const existingAsset = this.data.transaction
-          ? assets.find((item) => item.assetId === this.data.transaction!.assetId)
-          : assets.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
+    const normalizedCode = asset.assetCode.trim().toUpperCase();
+    const existingAsset = this.data.transaction
+      ? this.data.knownAssets?.find((item) => item.assetId === this.data.transaction!.assetId)
+      : this.data.knownAssets?.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
 
-        if (!existingAsset) {
-          this.sellAllowed = false;
-          this.availableSellAmount = 0;
-          this.ensureTransactionTypeAllowed();
-          return;
-        }
+    if (!existingAsset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
 
-        const editingId = this.data.transaction?.transactionId;
-        const existingTransactions = transactions.filter((transaction) =>
-          transaction.assetId === existingAsset.assetId && transaction.transactionId !== editingId
-        );
+    const editingId = this.data.transaction?.transactionId;
+    const existingTransactions = (this.data.knownTransactions ?? []).filter((transaction) =>
+      transaction.assetId === existingAsset.assetId && transaction.transactionId !== editingId
+    );
 
-        this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
-        this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
-        this.ensureTransactionTypeAllowed();
-      },
-      error: () => {
-        this.sellAllowed = false;
-        this.availableSellAmount = 0;
-        this.sellAvailabilityLoading = false;
-        this.ensureTransactionTypeAllowed();
-      },
-      complete: () => {
-        this.sellAvailabilityLoading = false;
-      }
-    });
+    this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
+    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
+    this.ensureTransactionTypeAllowed();
   }
 
   private ensureTransactionTypeAllowed(): void {
@@ -411,6 +431,7 @@ export class TransactionDialogComponent {
   }
 
   private calculateAvailableSellAmount(asset: Asset, transactions: Transaction[]): number {
+    const summary = this.data.assetSummaries?.find((item) => item.assetId === asset.assetId);
     const sorted = [...transactions].sort((a, b) => {
       const dateDiff = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
       return dateDiff || a.transactionId - b.transactionId;
@@ -429,11 +450,11 @@ export class TransactionDialogComponent {
     }
 
     if (!asset.isDailyAccrualFund) {
-      return Math.max(0, unitsHeld);
+      return Math.max(0, summary?.totalUnitsHeld ?? unitsHeld);
     }
 
     const selectedDate = new Date(this.form.get('transactionDate')?.value || this.today);
-    return Math.max(0, unitsHeld * this.getDailyAccrualUnitPrice(asset, selectedDate, accrualStartDate));
+    return Math.max(0, summary?.currentValue ?? unitsHeld * this.getDailyAccrualUnitPrice(asset, selectedDate, accrualStartDate));
   }
 
   private getDailyAccrualStartDate(asset: Asset, transactions: Transaction[], candidateDate?: Date): Date {
@@ -448,13 +469,15 @@ export class TransactionDialogComponent {
 
     return dates.length === 0
       ? new Date(asset.createdAt)
-      : new Date(Math.min(...dates.map((date) => date.setHours(0, 0, 0, 0))));
+      : new Date(Math.min(...dates.map((date) => new Date(date).setHours(0, 0, 0, 0))));
   }
 
   private getDailyAccrualUnitPrice(asset: Asset, asOf: Date, accrualStartDate: Date): number {
     const annualRate = asset.dailyAccrualAnnualRatePercent > 0 ? asset.dailyAccrualAnnualRatePercent : 16;
     const dayMs = 24 * 60 * 60 * 1000;
-    const days = Math.max(0, (asOf.setHours(0, 0, 0, 0) - accrualStartDate.setHours(0, 0, 0, 0)) / dayMs);
+    const asOfDate = new Date(asOf);
+    const startDate = new Date(accrualStartDate);
+    const days = Math.max(0, (asOfDate.setHours(0, 0, 0, 0) - startDate.setHours(0, 0, 0, 0)) / dayMs);
     return Number(Math.pow(1 + annualRate / 100, days / 365.25).toFixed(6));
   }
 

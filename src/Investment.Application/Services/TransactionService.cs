@@ -185,6 +185,11 @@ public class TransactionService : ITransactionService
                 ? totalAmount + goldPerGramAmount + fees
                 : totalAmount + goldPerGramAmount - fees;
 
+            if (txnType == TransactionType.Sell && netAmount <= 0)
+            {
+                throw new InvalidOperationException("Sale proceeds after fees must be greater than zero.");
+            }
+
             return (quantity, pricePerUnit, totalAmount, netAmount);
         }
 
@@ -199,6 +204,11 @@ public class TransactionService : ITransactionService
         var net = txnType == TransactionType.Buy
             ? amount + fees
             : amount - fees;
+
+        if (txnType == TransactionType.Sell && net <= 0)
+        {
+            throw new InvalidOperationException("Withdrawal proceeds after fees must be greater than zero.");
+        }
 
         return (units, unitPrice, amount, net);
     }

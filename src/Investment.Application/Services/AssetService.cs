@@ -292,7 +292,6 @@ public class AssetService : IAssetService
         decimal avgCost = 0;
         decimal realizedPnL = 0;
         decimal totalFeesPaid = 0;
-        decimal totalBuyOutflow = 0;
         var effectiveCurrentPrice = GetCurrentPrice(asset, currentPrice, DateTime.UtcNow);
 
         foreach (var txn in transactions.OrderBy(t => t.TransactionDate).ThenBy(t => t.TransactionId))
@@ -307,7 +306,6 @@ public class AssetService : IAssetService
                 var prevTotal = avgCost * unitsHeld;
                 var newTotal = txn.TotalAmount + goldPerGramAmount + feeAmount;
                 totalFeesPaid += feeAmount;
-                totalBuyOutflow += newTotal;
                 unitsHeld += txn.Quantity;
                 avgCost = unitsHeld > 0 ? (prevTotal + newTotal) / unitsHeld : 0;
             }
@@ -339,7 +337,7 @@ public class AssetService : IAssetService
             AverageBuyPrice = Math.Round(avgCost, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
-            TotalPaidIncludingFees = Math.Round(totalBuyOutflow, 2),
+            TotalPaidIncludingFees = Math.Round(costBasis, 2),
             CurrentPrice = Math.Round(effectiveCurrentPrice, 5),
             CurrentValue = Math.Round(currentValue, 2),
             UnrealizedPnL = Math.Round(unrealizedPnL, 2),
@@ -356,7 +354,6 @@ public class AssetService : IAssetService
         decimal avgCost = 0;
         decimal realizedPnL = 0;
         decimal totalFeesPaid = 0;
-        decimal totalBuyOutflow = 0;
         var accrualStartDate = GetDailyAccrualStartDate(asset, transactions);
 
         foreach (var txn in transactions.OrderBy(t => t.TransactionDate).ThenBy(t => t.TransactionId))
@@ -375,7 +372,6 @@ public class AssetService : IAssetService
                 var prevTotal = avgCost * unitsHeld;
                 var newTotal = txn.TotalAmount + feeAmount;
                 totalFeesPaid += feeAmount;
-                totalBuyOutflow += newTotal;
                 unitsHeld += units;
                 avgCost = unitsHeld > 0 ? (prevTotal + newTotal) / unitsHeld : 0;
             }
@@ -406,7 +402,7 @@ public class AssetService : IAssetService
             AverageBuyPrice = Math.Round(avgCost, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
-            TotalPaidIncludingFees = Math.Round(totalBuyOutflow, 2),
+            TotalPaidIncludingFees = Math.Round(costBasis, 2),
             CurrentPrice = Math.Round(effectiveCurrentPrice, 4),
             CurrentValue = Math.Round(currentValue, 2),
             UnrealizedPnL = Math.Round(unrealizedPnL, 2),
