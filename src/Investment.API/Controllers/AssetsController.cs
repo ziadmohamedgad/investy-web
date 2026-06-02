@@ -182,6 +182,11 @@ public class AssetsController : ControllerBase
 
             var currentPrice = latestPrices.TryGetValue(asset.AssetId, out var price) ? price.PriceValue : 0m;
             var s = AssetService.CalculateAssetSummary(asset, transactions, currentPrice);
+            if (s.IsClosedPosition && Math.Abs(s.RealizedPnL + s.UnrealizedPnL) <= 0.005m)
+            {
+                continue;
+            }
+
             if (s != null) summaries.Add(s);
         }
         return Ok(summaries);

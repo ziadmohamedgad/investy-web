@@ -49,6 +49,10 @@ public class AnalyticsService : IAnalyticsService
                 ? AssetService.GetCurrentPrice(asset, 0m, DateTime.UtcNow)
                 : latestPrices.ContainsKey(asset.AssetId) ? latestPrices[asset.AssetId].PriceValue : 0;
             var summary = AssetService.CalculateAssetSummary(asset, transactions, currentPrice);
+            if (summary.IsClosedPosition && Math.Abs(summary.RealizedPnL + summary.UnrealizedPnL) <= 0.005m)
+            {
+                continue;
+            }
 
             holdings.Add(new HoldingDto
             {

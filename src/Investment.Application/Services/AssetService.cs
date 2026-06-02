@@ -23,6 +23,7 @@ public interface IAssetService
 public class AssetService : IAssetService
 {
     private const decimal QuantityTolerance = 0.0000001m;
+    private const decimal ClosedPositionQuantityTolerance = 0.005m;
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -328,7 +329,7 @@ public class AssetService : IAssetService
         }
 
         var costBasis = avgCost * unitsHeld;
-        var isClosedPosition = Math.Abs(unitsHeld) <= QuantityTolerance;
+        var isClosedPosition = Math.Abs(unitsHeld) < ClosedPositionQuantityTolerance;
         var currentValue = asset.AssetType == AssetType.Gold
             ? unitsHeld * (effectiveCurrentPrice + asset.GoldCashbackPerGram)
             : unitsHeld * effectiveCurrentPrice;
@@ -401,7 +402,7 @@ public class AssetService : IAssetService
 
         var effectiveCurrentPrice = GetDailyAccrualUnitPrice(asset, DateTime.UtcNow, accrualStartDate);
         var costBasis = avgCost * unitsHeld;
-        var isClosedPosition = Math.Abs(unitsHeld) <= QuantityTolerance;
+        var isClosedPosition = Math.Abs(unitsHeld) < ClosedPositionQuantityTolerance;
         var currentValue = unitsHeld * effectiveCurrentPrice;
         var unrealizedPnL = currentValue - costBasis;
 
