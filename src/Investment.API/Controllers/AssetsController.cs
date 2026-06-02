@@ -175,6 +175,11 @@ public class AssetsController : ControllerBase
         foreach (var asset in assets)
         {
             var transactions = (await _unitOfWork.Transactions.GetByAssetIdOrderedAsync(asset.AssetId)).ToList();
+            if (transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) <= 0.005m)
+            {
+                continue;
+            }
+
             var currentPrice = latestPrices.TryGetValue(asset.AssetId, out var price) ? price.PriceValue : 0m;
             var s = AssetService.CalculateAssetSummary(asset, transactions, currentPrice);
             if (s != null) summaries.Add(s);

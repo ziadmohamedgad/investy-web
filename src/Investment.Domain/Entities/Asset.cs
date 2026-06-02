@@ -14,6 +14,7 @@ public class Asset
     public bool IsDailyAccrualFund { get; set; }
     public decimal DailyAccrualAnnualRatePercent { get; set; } = 16m;
     public decimal GoldCashbackPerGram { get; set; } = 28.5m;
+    public decimal ClosedRealizedPnL { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

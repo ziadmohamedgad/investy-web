@@ -29,33 +29,33 @@
 
       <ng-container matColumnDef="averageBuyPrice">
         <th mat-header-cell *matHeaderCellDef>متوسط الشراء</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.averageBuyPrice | number:'1.2-5' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.averageBuyPrice | number:'1.2-5' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="currentPrice">
         <th mat-header-cell *matHeaderCellDef>السعر الحالي</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentPrice | number:'1.2-5' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentPrice | number:'1.2-5' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="totalUnitsHeld">
         <th mat-header-cell *matHeaderCellDef>الكمية</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalUnitsHeld | number:'1.0-1' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalUnitsHeld | number:'1.0-1' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="totalPaidIncludingFees">
         <th mat-header-cell *matHeaderCellDef>إجمالي المدفوع شامل الرسوم</th>
-        <td mat-cell *matCellDef="let s"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalPaidIncludingFees | number:'1.2-2' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalPaidIncludingFees | number:'1.2-2' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="currentValue">
         <th mat-header-cell *matHeaderCellDef>القيمة السوقية</th>
-        <td mat-cell *matCellDef="let s"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentValue | number:'1.2-2' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentValue | number:'1.2-2' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="unrealizedPnL">
         <th mat-header-cell *matHeaderCellDef>إجمالي الربح/الخسارة غير المحققة</th>
         <td mat-cell *matCellDef="let s" [ngClass]="getPnLClass(s.unrealizedPnL)">
-          <span class="balance-value" [class.is-hidden]="hideBalances$ | async">
+          <span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">
             {{ s.unrealizedPnL | number:'1.2-2' }}
             <small class="pnl-percent">({{ s.unrealizedPnLPercent | number:'1.2-2' }}%)</small>
           </span>
@@ -76,10 +76,10 @@
         <th mat-header-cell *matHeaderCellDef>إجراءات</th>
         <td mat-cell *matCellDef="let s" class="actions-cell">
           <div class="asset-actions" [class.has-sync]="s.assetType === 'Stock'">
-            <button *ngIf="s.assetType === 'Stock'" mat-icon-button class="action-button sync-action" matTooltip="مزامنة السعر" matTooltipPosition="above" (click)="syncAssetPrice(s)" [disabled]="syncingAssetId === s.assetId" aria-label="مزامنة السعر">
+            <button *ngIf="!s.isClosedPosition && s.assetType === 'Stock'" mat-icon-button class="action-button sync-action" matTooltip="مزامنة السعر" matTooltipPosition="above" (click)="syncAssetPrice(s)" [disabled]="syncingAssetId === s.assetId" aria-label="مزامنة السعر">
               <mat-icon>{{ syncingAssetId === s.assetId ? 'hourglass_top' : 'sync' }}</mat-icon>
             </button>
-            <button mat-icon-button class="action-button edit-action" matTooltip="تعديل" matTooltipPosition="above" (click)="editCurrentPrice(s)" aria-label="تعديل">
+            <button *ngIf="!s.isClosedPosition" mat-icon-button class="action-button edit-action" matTooltip="تعديل" matTooltipPosition="above" (click)="editCurrentPrice(s)" aria-label="تعديل">
               <mat-icon>price_change</mat-icon>
             </button>
             <button mat-icon-button class="action-button delete-action" matTooltip="حذف" matTooltipPosition="above" (click)="deleteAsset(s)" aria-label="حذف الأصل">

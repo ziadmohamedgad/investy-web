@@ -22,6 +22,8 @@ public interface IAssetService
 
 public class AssetService : IAssetService
 {
+    private const decimal QuantityTolerance = 0.0000001m;
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IExcelSyncService _excelSyncService;
@@ -294,7 +296,7 @@ public class AssetService : IAssetService
     {
         decimal unitsHeld = 0;
         decimal avgCost = 0;
-        decimal realizedPnL = 0;
+        decimal realizedPnL = asset.ClosedRealizedPnL;
         decimal realizedCostBasis = 0;
         decimal totalFeesPaid = 0;
         var effectiveCurrentPrice = GetCurrentPrice(asset, currentPrice, DateTime.UtcNow);
@@ -326,6 +328,7 @@ public class AssetService : IAssetService
         }
 
         var costBasis = avgCost * unitsHeld;
+        var isClosedPosition = transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) > 0.005m;
         var currentValue = asset.AssetType == AssetType.Gold
             ? unitsHeld * (effectiveCurrentPrice + asset.GoldCashbackPerGram)
             : unitsHeld * effectiveCurrentPrice;
@@ -340,8 +343,9 @@ public class AssetService : IAssetService
             IsDailyAccrualFund = false,
             DailyAccrualAnnualRatePercent = asset.DailyAccrualAnnualRatePercent,
             GoldCashbackPerGram = asset.GoldCashbackPerGram,
+            IsClosedPosition = isClosedPosition,
             TotalUnitsHeld = Math.Round(unitsHeld, 4),
-            AverageBuyPrice = Math.Round(avgCost, 5),
+            AverageBuyPrice = Math.Round(unitsHeld > QuantityTolerance ? avgCost : 0m, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
             TotalPaidIncludingFees = Math.Round(costBasis, 2),
@@ -360,7 +364,7 @@ public class AssetService : IAssetService
     {
         decimal unitsHeld = 0;
         decimal avgCost = 0;
-        decimal realizedPnL = 0;
+        decimal realizedPnL = asset.ClosedRealizedPnL;
         decimal realizedCostBasis = 0;
         decimal totalFeesPaid = 0;
         var accrualStartDate = GetDailyAccrualStartDate(asset, transactions);
@@ -397,6 +401,7 @@ public class AssetService : IAssetService
 
         var effectiveCurrentPrice = GetDailyAccrualUnitPrice(asset, DateTime.UtcNow, accrualStartDate);
         var costBasis = avgCost * unitsHeld;
+        var isClosedPosition = transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) > 0.005m;
         var currentValue = unitsHeld * effectiveCurrentPrice;
         var unrealizedPnL = currentValue - costBasis;
 
@@ -409,8 +414,9 @@ public class AssetService : IAssetService
             IsDailyAccrualFund = true,
             DailyAccrualAnnualRatePercent = asset.DailyAccrualAnnualRatePercent,
             GoldCashbackPerGram = asset.GoldCashbackPerGram,
+            IsClosedPosition = isClosedPosition,
             TotalUnitsHeld = Math.Round(unitsHeld, 4),
-            AverageBuyPrice = Math.Round(avgCost, 5),
+            AverageBuyPrice = Math.Round(unitsHeld > QuantityTolerance ? avgCost : 0m, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
             TotalPaidIncludingFees = Math.Round(costBasis, 2),

@@ -9,6 +9,7 @@ export interface Asset {
   isDailyAccrualFund: boolean;
   dailyAccrualAnnualRatePercent: number;
   goldCashbackPerGram: number;
+  closedRealizedPnL: number;
   isActive: boolean;
   createdAt: Date;
   portfolios: string[];
@@ -35,6 +36,7 @@ export interface AssetSummary {
   isDailyAccrualFund: boolean;
   dailyAccrualAnnualRatePercent: number;
   goldCashbackPerGram: number;
+  isClosedPosition: boolean;
   totalUnitsHeld: number;
   averageBuyPrice: number;
   totalCostBasis: number;

@@ -15,6 +15,7 @@ public class AssetDto
     public bool IsDailyAccrualFund { get; set; }
     public decimal DailyAccrualAnnualRatePercent { get; set; }
     public decimal GoldCashbackPerGram { get; set; } = 28.5m;
+    public decimal ClosedRealizedPnL { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<string> Portfolios { get; set; } = new();
@@ -31,6 +32,7 @@ public class CreateAssetDto
     public bool IsDailyAccrualFund { get; set; }
     public decimal DailyAccrualAnnualRatePercent { get; set; } = 16m;
     public decimal GoldCashbackPerGram { get; set; } = 28.5m;
+    public decimal ClosedRealizedPnL { get; set; }
     public bool IsActive { get; set; } = true;
 }
 
@@ -45,6 +47,7 @@ public class UpdateAssetDto
     public bool IsDailyAccrualFund { get; set; }
     public decimal DailyAccrualAnnualRatePercent { get; set; } = 16m;
     public decimal GoldCashbackPerGram { get; set; } = 28.5m;
+    public decimal ClosedRealizedPnL { get; set; }
     public bool IsActive { get; set; } = true;
 }
 
@@ -57,6 +60,7 @@ public class AssetSummaryDto
     public bool IsDailyAccrualFund { get; set; }
     public decimal DailyAccrualAnnualRatePercent { get; set; }
     public decimal GoldCashbackPerGram { get; set; } = 28.5m;
+    public bool IsClosedPosition { get; set; }
     public decimal TotalUnitsHeld { get; set; }
     public decimal AverageBuyPrice { get; set; }
     public decimal TotalCostBasis { get; set; }

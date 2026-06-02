@@ -139,6 +139,7 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
       this.summaries = data.map((summary) => ({
         ...summary,
         goldCashbackPerGram: summary.goldCashbackPerGram ?? 28.5,
+        isClosedPosition: summary.isClosedPosition ?? false,
         totalFeesPaid: summary.totalFeesPaid ?? 0,
         totalPaidIncludingFees: summary.totalPaidIncludingFees ?? (summary.totalCostBasis + (summary.totalFeesPaid ?? 0))
       }));

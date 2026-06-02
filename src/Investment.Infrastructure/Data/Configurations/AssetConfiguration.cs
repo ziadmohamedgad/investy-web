@@ -18,6 +18,7 @@ public class AssetConfiguration : IEntityTypeConfiguration<Asset>
         builder.Property(a => a.IsDailyAccrualFund).HasDefaultValue(false);
         builder.Property(a => a.DailyAccrualAnnualRatePercent).HasPrecision(18, 2).HasDefaultValue(0m);
         builder.Property(a => a.GoldCashbackPerGram).HasPrecision(18, 5).HasDefaultValue(28.5m);
+        builder.Property(a => a.ClosedRealizedPnL).HasPrecision(18, 2).HasDefaultValue(0m);
         builder.Property(a => a.IsActive).HasDefaultValue(true);
         builder.Property(a => a.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
 

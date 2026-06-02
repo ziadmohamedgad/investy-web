@@ -83,8 +83,11 @@
   }
 }
 
-.type-buy { color: var(--accent); font-weight: 500; }
-.type-sell { color: var(--danger); font-weight: 500; }
+.type-buy { color: #16a34a; font-weight: 700; }
+.type-sell { color: #dc2626; font-weight: 700; }
+
+:host-context(.dark-theme) .type-buy { color: #22c55e; }
+:host-context(.dark-theme) .type-sell { color: #f87171; }
 
 .asset-code {
   display: inline-block;

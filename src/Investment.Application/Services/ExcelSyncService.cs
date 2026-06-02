@@ -84,7 +84,10 @@ public class ExcelSyncService : IExcelSyncService
 
         foreach (var asset in assets)
         {
-            if (!transactionsByAsset.TryGetValue(asset.AssetId, out var assetTransactions) || assetTransactions.Count == 0)
+            var assetTransactions = transactionsByAsset.TryGetValue(asset.AssetId, out var list)
+                ? list
+                : new List<Transaction>();
+            if (assetTransactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) <= 0.005m)
             {
                 continue;
             }

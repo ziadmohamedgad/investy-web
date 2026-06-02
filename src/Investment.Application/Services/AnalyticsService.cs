@@ -37,7 +37,10 @@ public class AnalyticsService : IAnalyticsService
 
         foreach (var asset in assets)
         {
-            if (!transactionsByAsset.TryGetValue(asset.AssetId, out var transactions) || transactions.Count == 0)
+            var transactions = transactionsByAsset.TryGetValue(asset.AssetId, out var list)
+                ? list
+                : new List<Investment.Domain.Entities.Transaction>();
+            if (transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) <= 0.005m)
             {
                 continue;
             }

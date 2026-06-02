@@ -269,8 +269,8 @@ public class TransactionService : ITransactionService
             if (quantity > unitsHeld + QuantityTolerance)
             {
                 throw new InvalidOperationException(asset.IsDailyAccrualFund
-                    ? $"لا يمكن سحب مبلغ يتخطى المتاح لهذا الأصل. المتاح عند تاريخ العملية {unitsHeld:N5} وحدة."
-                    : $"لا يمكن بيع كمية تتخطى المتاح لهذا الأصل. المتاح عند تاريخ العملية {unitsHeld:N5}.");
+                    ? "لا يمكن إتمام هذه العملية لأن مبلغ السحب يتجاوز المبلغ المتاح من هذا الأصل."
+                    : "لا يمكن إتمام هذه العملية لأن الكمية المباعة تتجاوز الكمية المتاحة من هذا الأصل.");
             }
 
             unitsHeld -= quantity;
@@ -294,6 +294,7 @@ public class TransactionService : ITransactionService
         if (transaction == null) return false;
 
         var asset = await _unitOfWork.Assets.GetByIdAsync(transaction.AssetId);
+        var transactionsBeforeDelete = (await _unitOfWork.Transactions.GetByAssetIdOrderedAsync(transaction.AssetId)).ToList();
         var remainingBeforeDelete = (await _unitOfWork.Transactions.GetByAssetIdOrderedAsync(transaction.AssetId))
             .Where(t => t.TransactionId != id)
             .ToList();
@@ -310,8 +311,21 @@ public class TransactionService : ITransactionService
 
         if (!remaining.Any())
         {
-            // Hard-delete the asset (cascade will remove portfolio links)
-            await _unitOfWork.Assets.DeleteAsync(transaction.AssetId);
+            var latestPrice = await _unitOfWork.Prices.GetLatestByAssetIdAsync(transaction.AssetId);
+            var closingSummary = asset == null
+                ? null
+                : AssetService.CalculateAssetSummary(asset, transactionsBeforeDelete, latestPrice?.PriceValue ?? 0m);
+            var realizedPnL = closingSummary?.RealizedPnL ?? 0m;
+
+            if (Math.Abs(realizedPnL) <= 0.005m)
+            {
+                await _unitOfWork.Assets.DeleteAsync(transaction.AssetId);
+            }
+            else if (asset != null)
+            {
+                asset.ClosedRealizedPnL = realizedPnL;
+                await _unitOfWork.Assets.UpdateAsync(asset);
+            }
         }
 
         await _excelSyncService.RefreshAsync();
