@@ -19,6 +19,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Separate mobile repository kept beside the web source locally
+Investy Apk/
+
 # Local settings and secrets
 src/Investment.API/appsettings.Development.json
 src/Investment.API/appsettings.Local.json
@@ -39,4 +42,3 @@ Eodhd.txt
 Thumbs.db
 .idea/
 .vscode/
-
