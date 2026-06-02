@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,9 +15,8 @@ import { TransactionDialogComponent, TransactionDialogData } from './transaction
 import { ManualAssetDialogComponent } from '../assets/manual-asset-dialog/manual-asset-dialog.component';
 import { ConfirmDeleteDialogComponent } from '../../shared/confirm-delete-dialog/confirm-delete-dialog.component';
 import { BalanceVisibilityService } from '../../core/services/balance-visibility.service';
-import { Observable } from 'rxjs';
-import { catchError, finalize, switchMap, timeout } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { catchError, finalize, map, switchMap, timeout } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
@@ -27,7 +26,7 @@ import { of } from 'rxjs';
   styleUrl: './transactions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionsComponent implements OnInit, AfterViewInit {
+export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   transactions: Transaction[] = [];
   dataSource = new MatTableDataSource<Transaction>([]);
   pageSize = 7;
@@ -35,8 +34,10 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['date', 'asset', 'type', 'quantity', 'price', 'total', 'edit', 'actions'];
   loading = true;
   error: string | null = null;
+  loadError: string | null = null;
   successMessage: string | null = null;
   hideBalances$!: Observable<boolean>;
+  private messageTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private transactionService: TransactionService,
@@ -54,6 +55,12 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+  }
+
+  ngOnDestroy(): void {
+    if (this.messageTimer) {
+      clearTimeout(this.messageTimer);
+    }
   }
 
   get totalItems(): number {
@@ -99,11 +106,11 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
     if (showLoading) {
       this.loading = true;
     }
-    this.error = null;
+    this.loadError = null;
     this.transactionService.getAll().pipe(
       timeout(10000),
       catchError(() => {
-        this.error = 'تعذر تحميل المعاملات.';
+        this.loadError = 'تعذر تحميل المعاملات.';
         return of([] as Transaction[]);
       }),
       finalize(() => {
@@ -158,6 +165,12 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
     dialogRef.afterClosed().subscribe((result: CreateManualAssetDraft | undefined) => {
       if (!result) return;
 
+      this.canCreateInitialTransaction(result.assetCode, result.transactionType).subscribe((canProceed) => {
+        if (!canProceed) {
+          this.showError(this.firstSellBlockedMessage(result.isDailyAccrualFund));
+          return;
+        }
+
       this.assetService.createManual({
         assetCode: result.assetCode,
         assetName: result.assetName,
@@ -182,8 +195,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
         )
       ).subscribe({
         next: () => {
-          this.error = null;
-          this.successMessage = `تمت إضافة الأصل ${result.assetCode} والمعاملة بنجاح.`;
+          this.showSuccess(`تمت إضافة الأصل ${result.assetCode} والمعاملة بنجاح.`);
           this.loadTransactions(false);
           this.refreshService.notify('transactions:changed');
           this.cdr.markForCheck();
@@ -198,14 +210,14 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
             body?.Detailed;
 
           if (err?.status === 0) {
-            this.error = 'تعذر الاتصال بالخادم. تأكد أن واجهة الـ API تعمل على http://localhost:5091';
+            this.showError('تعذر الاتصال بالخادم. تأكد أن واجهة الـ API تعمل على http://localhost:5091');
           } else if (serverMessage) {
-            this.error = `تعذر الحفظ: ${serverMessage}`;
+            this.showError(`تعذر الحفظ: ${serverMessage}`);
           } else {
-            this.error = `تعذر إضافة الأصل اليدوي (رمز الخطأ: ${err?.status ?? 'غير معروف'}).`;
+            this.showError(`تعذر إضافة الأصل اليدوي (رمز الخطأ: ${err?.status ?? 'غير معروف'}).`);
           }
-          this.cdr.markForCheck();
         }
+      });
       });
     });
   }
@@ -224,6 +236,22 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
   }
 
   private saveDraft(result: CreateTransactionDraft, mode: 'create' | 'edit', transactionId?: number): void {
+    if (mode === 'create') {
+      this.canCreateInitialTransaction(result.asset.assetCode, result.transactionType).subscribe((canProceed) => {
+        if (!canProceed) {
+          this.showError(this.firstSellBlockedMessage(result.asset.isDailyAccrualFund));
+          return;
+        }
+
+        this.persistDraft(result, mode, transactionId);
+      });
+      return;
+    }
+
+    this.persistDraft(result, mode, transactionId);
+  }
+
+  private persistDraft(result: CreateTransactionDraft, mode: 'create' | 'edit', transactionId?: number): void {
     this.assetService.ensureExternalAsset({
       assetCode: result.asset.assetCode.trim().toUpperCase(),
       assetName: result.asset.assetName,
@@ -249,23 +277,50 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
 
         request.subscribe({
           next: () => {
+            this.showSuccess(mode === 'edit' ? 'تم تعديل المعاملة.' : 'تم حفظ المعاملة.');
             this.loadTransactions(false);
             this.refreshService.notify('transactions:changed');
           },
-          error: () => {
-            this.error = mode === 'edit' ? 'تعذر تعديل المعاملة.' : 'تعذر إضافة المعاملة.';
-            this.cdr.markForCheck();
+          error: (err) => {
+            const serverMessage = this.extractServerMessage(err);
+            this.showError(serverMessage ?? (mode === 'edit' ? 'تعذر تعديل المعاملة.' : 'تعذر إضافة المعاملة.'));
           }
         });
       },
       error: (err) => {
-        const serverMessage = err?.error?.message || err?.error?.Message || err?.error?.detailed || err?.error?.Detailed;
-        this.error = serverMessage
+        const serverMessage = this.extractServerMessage(err);
+        this.showError(serverMessage
           ? `تعذر إضافة الأصل من المصدر الخارجي: ${serverMessage}`
-          : 'تعذر إضافة الأصل من المصدر الخارجي.';
-        this.cdr.markForCheck();
+          : 'تعذر إضافة الأصل من المصدر الخارجي.');
       }
     });
+  }
+
+  private canCreateInitialTransaction(assetCode: string, transactionType: string): Observable<boolean> {
+    if (transactionType !== 'Sell') {
+      return of(true);
+    }
+
+    const normalizedCode = assetCode.trim().toUpperCase();
+    return forkJoin([this.assetService.getAll(), this.transactionService.getAll()]).pipe(
+      map(([assets, transactions]) => {
+        const asset = assets.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
+        if (!asset) {
+          return false;
+        }
+
+        return transactions.some((transaction) =>
+          transaction.assetId === asset.assetId && transaction.transactionType === 'Buy'
+        );
+      }),
+      catchError(() => of(false))
+    );
+  }
+
+  private firstSellBlockedMessage(isDailyAccrualFund?: boolean): string {
+    return isDailyAccrualFund
+      ? 'لا يمكن تسجيل سحب قبل وجود إيداع سابق لهذا الأصل.'
+      : 'لا يمكن تسجيل بيع قبل وجود عملية شراء سابقة لهذا الأصل.';
   }
 
   deleteTransaction(transaction: Transaction): void {
@@ -287,22 +342,64 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
 
       this.transactionService.delete(transaction.transactionId).subscribe({
         next: () => {
+          this.showSuccess('تم حذف المعاملة.');
           this.loadTransactions(false);
           this.refreshService.notify('transactions:changed');
         },
-        error: () => {
-          this.error = 'تعذر حذف المعاملة.';
-          this.cdr.markForCheck();
+        error: (err) => {
+          this.showError(this.extractServerMessage(err) ?? 'تعذر حذف المعاملة.');
         }
       });
     });
   }
 
+  private showSuccess(message: string): void {
+    this.showTransientMessage(message, 'success');
+  }
+
+  private showError(message: string): void {
+    this.showTransientMessage(message, 'error');
+  }
+
+  private showTransientMessage(message: string, type: 'success' | 'error'): void {
+    if (this.messageTimer) {
+      clearTimeout(this.messageTimer);
+    }
+
+    this.successMessage = type === 'success' ? message : null;
+    this.error = type === 'error' ? message : null;
+    this.cdr.markForCheck();
+
+    this.messageTimer = setTimeout(() => {
+      if (type === 'success' && this.successMessage === message) {
+        this.successMessage = null;
+      }
+      if (type === 'error' && this.error === message) {
+        this.error = null;
+      }
+      this.cdr.markForCheck();
+    }, 3000);
+  }
+
+  private extractServerMessage(err: any): string | null {
+    const body = err?.error;
+    return (typeof body === 'string' ? body : null) ??
+      body?.message ??
+      body?.Message ??
+      body?.detailed ??
+      body?.Detailed ??
+      null;
+  }
+
 
   trackByTransactionId = (_: number, item: Transaction) => item.transactionId;
 
-  transactionTypeLabel(type: string): string {
-    return type === 'Buy' ? 'شراء' : type === 'Sell' ? 'بيع' : type;
+  transactionTypeLabel(transaction: Transaction): string {
+    if (transaction.isDailyAccrualFund) {
+      return transaction.transactionType === 'Buy' ? 'إيداع' : transaction.transactionType === 'Sell' ? 'سحب' : transaction.transactionType;
+    }
+
+    return transaction.transactionType === 'Buy' ? 'شراء' : transaction.transactionType === 'Sell' ? 'بيع' : transaction.transactionType;
   }
   getAssetCodeClass(assetType: string): string {
     if (assetType === 'Gold') {

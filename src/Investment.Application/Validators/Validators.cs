@@ -39,7 +39,9 @@ public class CreateTransactionValidator : AbstractValidator<CreateTransactionDto
         RuleFor(x => x.TransactionType).NotEmpty()
             .Must(x => Enum.TryParse<TransactionType>(x, true, out _))
             .WithMessage("Invalid transaction type. Valid types: Buy, Sell");
-        RuleFor(x => x.TransactionDate).NotEmpty().LessThanOrEqualTo(DateTime.UtcNow.AddDays(1));
+        RuleFor(x => x.TransactionDate).NotEmpty()
+            .Must(date => date.Date <= DateTime.Now.Date)
+            .WithMessage("Transaction date cannot be in the future.");
         RuleFor(x => x.Quantity).GreaterThan(0);
         RuleFor(x => x.PricePerUnit).GreaterThan(0);
         RuleFor(x => x.Fees).GreaterThanOrEqualTo(0);
@@ -53,7 +55,9 @@ public class UpdateTransactionValidator : AbstractValidator<UpdateTransactionDto
         RuleFor(x => x.AssetId).GreaterThan(0);
         RuleFor(x => x.TransactionType).NotEmpty()
             .Must(x => Enum.TryParse<TransactionType>(x, true, out _));
-        RuleFor(x => x.TransactionDate).NotEmpty();
+        RuleFor(x => x.TransactionDate).NotEmpty()
+            .Must(date => date.Date <= DateTime.Now.Date)
+            .WithMessage("Transaction date cannot be in the future.");
         RuleFor(x => x.Quantity).GreaterThan(0);
         RuleFor(x => x.PricePerUnit).GreaterThan(0);
         RuleFor(x => x.Fees).GreaterThanOrEqualTo(0);

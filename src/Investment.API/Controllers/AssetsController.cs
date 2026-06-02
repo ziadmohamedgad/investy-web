@@ -78,9 +78,6 @@ public class AssetsController : ControllerBase
         if (localAssets.Any())
             return Ok(localAssets);
 
-        if (q.Length < 4)
-            return Ok(Array.Empty<ExternalAssetSearchDto>());
-
         var cacheKey = $"eodhd:asset-search:{q.ToUpperInvariant()}";
         List<(string Code, string Name, string Type, string Currency, string ExternalTicker)>? eodhdAssets = null;
         if (!_cache.TryGetValue(cacheKey, out eodhdAssets) || eodhdAssets == null)

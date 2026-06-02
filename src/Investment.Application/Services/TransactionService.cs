@@ -18,6 +18,8 @@ public interface ITransactionService
 
 public class TransactionService : ITransactionService
 {
+    private const decimal QuantityTolerance = 0.0000001m;
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IExcelSyncService _excelSyncService;
@@ -53,6 +55,8 @@ public class TransactionService : ITransactionService
 
     public async Task<TransactionDto> CreateAsync(CreateTransactionDto dto)
     {
+        EnsureNotFutureDate(dto.TransactionDate);
+
         var asset = await _unitOfWork.Assets.GetByIdAsync(dto.AssetId)
             ?? throw new InvalidOperationException($"Asset {dto.AssetId} not found.");
         var txnType = Enum.Parse<TransactionType>(dto.TransactionType, true);
@@ -63,17 +67,9 @@ public class TransactionService : ITransactionService
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
         var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
 
-        // Validate sell doesn't exceed held units
-        if (txnType == TransactionType.Sell)
-        {
-            var unitsHeld = CalculateUnitsHeld(asset, existingTxns, accrualStartDate);
-
-            if (normalized.Quantity > unitsHeld)
-                throw new InvalidOperationException($"Cannot sell {normalized.Quantity} units. Only {unitsHeld} units held.");
-        }
-
         var transaction = new Transaction
         {
+            TransactionId = int.MaxValue,
             AssetId = dto.AssetId,
             TransactionType = txnType,
             TransactionDate = dto.TransactionDate,
@@ -87,6 +83,8 @@ public class TransactionService : ITransactionService
             CreatedAt = DateTime.UtcNow
         };
 
+        ValidateTransactionSequence(asset, existingTxnsForAsset.Append(transaction), accrualStartDate);
+        transaction.TransactionId = 0;
         var created = await _unitOfWork.Transactions.AddAsync(transaction);
 
         await UpdateExistingStockPriceFromTransactionIfNewerAsync(asset, existingTxnsForAsset, dto.TransactionDate, normalized.PricePerUnit);
@@ -127,6 +125,8 @@ public class TransactionService : ITransactionService
 
     public async Task<TransactionDto?> UpdateAsync(int id, UpdateTransactionDto dto)
     {
+        EnsureNotFutureDate(dto.TransactionDate);
+
         var transaction = await _unitOfWork.Transactions.GetByIdAsync(id);
         if (transaction == null) return null;
 
@@ -144,14 +144,6 @@ public class TransactionService : ITransactionService
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
         var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
 
-        if (txnType == TransactionType.Sell)
-        {
-            var unitsHeld = CalculateUnitsHeld(asset, existingTxns, accrualStartDate);
-
-            if (normalized.Quantity > unitsHeld)
-                throw new InvalidOperationException($"Cannot sell {normalized.Quantity} units. Only {unitsHeld} units held.");
-        }
-
         transaction.AssetId = dto.AssetId;
         transaction.TransactionType = txnType;
         transaction.TransactionDate = dto.TransactionDate;
@@ -163,6 +155,7 @@ public class TransactionService : ITransactionService
         transaction.NetAmount = normalized.NetAmount;
         transaction.Notes = dto.Notes;
 
+        ValidateTransactionSequence(asset, existingTxns.Append(transaction), accrualStartDate);
         await _unitOfWork.Transactions.UpdateAsync(transaction);
 
         await _excelSyncService.RefreshAsync();
@@ -210,23 +203,56 @@ public class TransactionService : ITransactionService
         return (units, unitPrice, amount, net);
     }
 
-    private static decimal CalculateUnitsHeld(Asset asset, IEnumerable<Transaction> transactions, DateTime accrualStartDate)
+    private static void EnsureNotFutureDate(DateTime transactionDate)
+    {
+        if (transactionDate.Date > DateTime.Now.Date)
+        {
+            throw new InvalidOperationException("Cannot record a transaction with a future date.");
+        }
+    }
+
+    private static void ValidateTransactionSequence(Asset asset, IEnumerable<Transaction> transactions, DateTime accrualStartDate)
     {
         decimal unitsHeld = 0;
+        var hasBuy = false;
 
-        foreach (var transaction in transactions)
+        foreach (var transaction in transactions.OrderBy(t => t.TransactionDate).ThenBy(t => t.TransactionId))
         {
-            var quantity = transaction.Quantity;
-            if (asset.IsDailyAccrualFund)
+            var quantity = GetEffectiveQuantity(asset, transaction, accrualStartDate);
+
+            if (transaction.TransactionType == TransactionType.Buy)
             {
-                var unitPrice = AssetService.GetDailyAccrualUnitPrice(asset, transaction.TransactionDate, accrualStartDate);
-                quantity = unitPrice > 0 ? transaction.TotalAmount / unitPrice : 0;
+                hasBuy = true;
+                unitsHeld += quantity;
+                continue;
             }
 
-            unitsHeld += transaction.TransactionType == TransactionType.Buy ? quantity : -quantity;
+            if (!hasBuy)
+            {
+                var action = asset.IsDailyAccrualFund ? "withdraw" : "sell";
+                var prerequisite = asset.IsDailyAccrualFund ? "deposit" : "buy";
+                throw new InvalidOperationException($"Cannot {action} before recording a previous {prerequisite} transaction for this asset.");
+            }
+
+            if (quantity > unitsHeld + QuantityTolerance)
+            {
+                var action = asset.IsDailyAccrualFund ? "withdraw" : "sell";
+                throw new InvalidOperationException($"Cannot {action} {quantity:N5} units. Only {unitsHeld:N5} units are available at that transaction date.");
+            }
+
+            unitsHeld -= quantity;
+        }
+    }
+
+    private static decimal GetEffectiveQuantity(Asset asset, Transaction transaction, DateTime accrualStartDate)
+    {
+        if (!asset.IsDailyAccrualFund)
+        {
+            return transaction.Quantity;
         }
 
-        return unitsHeld;
+        var unitPrice = AssetService.GetDailyAccrualUnitPrice(asset, transaction.TransactionDate, accrualStartDate);
+        return unitPrice > 0 ? transaction.TotalAmount / unitPrice : 0;
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -235,6 +261,15 @@ public class TransactionService : ITransactionService
         if (transaction == null) return false;
 
         var asset = await _unitOfWork.Assets.GetByIdAsync(transaction.AssetId);
+        var remainingBeforeDelete = (await _unitOfWork.Transactions.GetByAssetIdOrderedAsync(transaction.AssetId))
+            .Where(t => t.TransactionId != id)
+            .ToList();
+
+        if (asset != null && remainingBeforeDelete.Any())
+        {
+            var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, remainingBeforeDelete);
+            ValidateTransactionSequence(asset, remainingBeforeDelete, accrualStartDate);
+        }
 
         await _unitOfWork.Transactions.DeleteAsync(id);
 

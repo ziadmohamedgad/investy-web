@@ -56,20 +56,24 @@
       <mat-form-field appearance="outline" class="field">
         <mat-label>النوع</mat-label>
         <mat-select formControlName="transactionType">
-          <mat-option *ngFor="let t of transactionTypes" [value]="t.value">{{ t.label }}</mat-option>
+          <mat-option *ngFor="let t of transactionTypeOptions" [value]="t.value" [disabled]="t.disabled">{{ t.label }}</mat-option>
         </mat-select>
+        <mat-hint *ngIf="sellBlockedHint">{{ sellBlockedHint }}</mat-hint>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="field">
         <mat-label>التاريخ</mat-label>
-        <input matInput type="date" formControlName="transactionDate" />
+        <input matInput type="date" formControlName="transactionDate" [max]="today" />
+        <mat-error *ngIf="form.get('transactionDate')?.hasError('futureDate')">لا يمكن تسجيل عملية بتاريخ مستقبلي</mat-error>
       </mat-form-field>
     </div>
 
     <div class="row">
       <mat-form-field appearance="outline" class="field">
         <mat-label>{{ quantityLabel }}</mat-label>
-        <input matInput type="number" formControlName="quantity" step="0.0001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <input matInput type="number" formControlName="quantity" step="0.0001" [max]="form.get('transactionType')?.value === 'Sell' ? availableSellAmount : null" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <mat-hint *ngIf="form.get('transactionType')?.value === 'Sell' && sellAllowed">المتاح: {{ availableSellLabel }}</mat-hint>
+        <mat-error *ngIf="sellExceedsAvailable">الكمية تتخطى المتاح لهذا الأصل</mat-error>
         <mat-error *ngIf="form.get('quantity')?.hasError('required')">
           {{ isDailyAccrualFundSelected ? 'المبلغ مطلوب' : 'الكمية مطلوبة' }}
         </mat-error>
@@ -97,5 +101,5 @@
 
 <mat-dialog-actions align="end">
   <button mat-button type="button" (click)="cancel()">إلغاء</button>
-  <button mat-raised-button color="primary" type="button" (click)="submit()">حفظ</button>
+  <button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="form.invalid || sellExceedsAvailable">حفظ</button>
 </mat-dialog-actions>

@@ -1,6 +1,6 @@
 import { Component, HostListener, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,10 +8,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CreateTransactionDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
+import { Asset, CreateTransactionDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
 import { AssetService } from '../../../core/services/asset.service';
+import { TransactionService } from '../../../core/services/transaction.service';
 import { BalanceVisibilityService } from '../../../core/services/balance-visibility.service';
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 
 export type TransactionDialogMode = 'create' | 'edit';
@@ -46,15 +47,25 @@ export class TransactionDialogComponent {
     { value: 'Sell', label: 'بيع' }
   ];
 
+  readonly dailyAccrualTransactionTypes = [
+    { value: 'Buy', label: 'إيداع' },
+    { value: 'Sell', label: 'سحب' }
+  ];
+
+  readonly today = this.todayIso();
   form;
   searchResults: ExternalAssetSearchResult[] = [];
   searchLoading = false;
   selectedAsset: ExternalAssetSearchResult | null = null;
+  sellAllowed = false;
+  sellAvailabilityLoading = false;
+  availableSellAmount = 0;
   hideBalances$!: Observable<boolean>;
 
   constructor(
     private fb: FormBuilder,
     private assetService: AssetService,
+    private transactionService: TransactionService,
     private balanceVisibilityService: BalanceVisibilityService,
     private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
@@ -63,7 +74,7 @@ export class TransactionDialogComponent {
     this.form = this.fb.group({
       assetQuery: ['', [Validators.required]],
       transactionType: ['Buy', [Validators.required]],
-      transactionDate: [this.todayIso(), [Validators.required]],
+      transactionDate: [this.today, [Validators.required, this.notFutureDateValidator]],
       quantity: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
       pricePerUnit: [null as unknown as number, [Validators.required, Validators.min(0)]],
       manufacturingFeePerGram: [null as unknown as number, [Validators.min(0)]],
@@ -93,6 +104,8 @@ export class TransactionDialogComponent {
     } else if (this.data.prefilledAsset) {
       this.applySelectedAsset(this.data.prefilledAsset);
     }
+
+    this.form.get('transactionDate')!.valueChanges.subscribe(() => this.refreshSellAvailability());
 
     const assetQueryControl = this.form.get('assetQuery')!;
     (assetQueryControl.valueChanges as any).pipe(
@@ -125,6 +138,14 @@ export class TransactionDialogComponent {
     return this.data.mode === 'edit';
   }
 
+  get transactionTypeOptions(): { value: string; label: string; disabled?: boolean }[] {
+    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    return source.map((option) => ({
+      ...option,
+      disabled: option.value === 'Sell' && !this.sellAllowed
+    }));
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboardShortcut(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
@@ -140,7 +161,7 @@ export class TransactionDialogComponent {
   }
 
   submit(): void {
-    if (this.form.invalid) {
+    if (this.form.invalid || this.sellExceedsAvailable) {
       this.form.markAllAsTouched();
       return;
     }
@@ -211,6 +232,7 @@ export class TransactionDialogComponent {
     }, { emitEvent: false });
     this.syncDailyAccrualMode(asset.isDailyAccrualFund);
     this.syncGoldMode(asset.assetType === 'Gold');
+    this.refreshSellAvailability(asset);
   }
 
   displayAsset(asset?: ExternalAssetSearchResult | null): string {
@@ -262,6 +284,32 @@ export class TransactionDialogComponent {
     return this.isGoldBuySelected ? 'المصنعية للجرام' : 'الكاش باك للجرام';
   }
 
+  get sellBlockedHint(): string | null {
+    if (this.sellAllowed || this.sellAvailabilityLoading) {
+      return null;
+    }
+
+    return this.isDailyAccrualFundSelected
+      ? 'السحب متاح فقط بعد وجود إيداع سابق لهذا الأصل.'
+      : 'البيع متاح فقط بعد وجود عملية شراء سابقة لهذا الأصل.';
+  }
+
+  get sellExceedsAvailable(): boolean {
+    if (this.form.get('transactionType')?.value !== 'Sell') {
+      return false;
+    }
+
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return quantity > 0 && this.availableSellAmount > 0 && quantity > this.availableSellAmount + 0.0000001;
+  }
+
+  get availableSellLabel(): string {
+    return this.availableSellAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: this.isDailyAccrualFundSelected ? 2 : 5
+    });
+  }
+
   private syncGoldMode(enabled: boolean): void {
     const manufacturingFeeControl = this.form.get('manufacturingFeePerGram');
     if (!manufacturingFeeControl) {
@@ -299,6 +347,115 @@ export class TransactionDialogComponent {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private notFutureDateValidator = (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) {
+      return null;
+    }
+
+    return new Date(value).setHours(0, 0, 0, 0) > new Date(this.today).setHours(0, 0, 0, 0)
+      ? { futureDate: true }
+      : null;
+  };
+
+  private refreshSellAvailability(asset = this.selectedAsset): void {
+    if (!asset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    this.sellAvailabilityLoading = true;
+    forkJoin([this.assetService.getAll(), this.transactionService.getAll()]).subscribe({
+      next: ([assets, transactions]) => {
+        const normalizedCode = asset.assetCode.trim().toUpperCase();
+        const existingAsset = this.data.transaction
+          ? assets.find((item) => item.assetId === this.data.transaction!.assetId)
+          : assets.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
+
+        if (!existingAsset) {
+          this.sellAllowed = false;
+          this.availableSellAmount = 0;
+          this.ensureTransactionTypeAllowed();
+          return;
+        }
+
+        const editingId = this.data.transaction?.transactionId;
+        const existingTransactions = transactions.filter((transaction) =>
+          transaction.assetId === existingAsset.assetId && transaction.transactionId !== editingId
+        );
+
+        this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
+        this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
+        this.ensureTransactionTypeAllowed();
+      },
+      error: () => {
+        this.sellAllowed = false;
+        this.availableSellAmount = 0;
+        this.sellAvailabilityLoading = false;
+        this.ensureTransactionTypeAllowed();
+      },
+      complete: () => {
+        this.sellAvailabilityLoading = false;
+      }
+    });
+  }
+
+  private ensureTransactionTypeAllowed(): void {
+    if (!this.sellAllowed && this.form.get('transactionType')?.value === 'Sell') {
+      this.form.get('transactionType')?.setValue('Buy', { emitEvent: false });
+    }
+  }
+
+  private calculateAvailableSellAmount(asset: Asset, transactions: Transaction[]): number {
+    const sorted = [...transactions].sort((a, b) => {
+      const dateDiff = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
+      return dateDiff || a.transactionId - b.transactionId;
+    });
+    const accrualStartDate = this.getDailyAccrualStartDate(asset, sorted, new Date(this.form.get('transactionDate')?.value || this.today));
+
+    let unitsHeld = 0;
+    for (const transaction of sorted) {
+      const quantity = asset.isDailyAccrualFund
+        ? this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate) > 0
+          ? transaction.totalAmount / this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate)
+          : 0
+        : transaction.quantity;
+
+      unitsHeld += transaction.transactionType === 'Buy' ? quantity : -quantity;
+    }
+
+    if (!asset.isDailyAccrualFund) {
+      return Math.max(0, unitsHeld);
+    }
+
+    const selectedDate = new Date(this.form.get('transactionDate')?.value || this.today);
+    return Math.max(0, unitsHeld * this.getDailyAccrualUnitPrice(asset, selectedDate, accrualStartDate));
+  }
+
+  private getDailyAccrualStartDate(asset: Asset, transactions: Transaction[], candidateDate?: Date): Date {
+    if (!asset.isDailyAccrualFund) {
+      return new Date(asset.createdAt);
+    }
+
+    const dates = transactions.map((transaction) => new Date(transaction.transactionDate));
+    if (candidateDate) {
+      dates.push(candidateDate);
+    }
+
+    return dates.length === 0
+      ? new Date(asset.createdAt)
+      : new Date(Math.min(...dates.map((date) => date.setHours(0, 0, 0, 0))));
+  }
+
+  private getDailyAccrualUnitPrice(asset: Asset, asOf: Date, accrualStartDate: Date): number {
+    const annualRate = asset.dailyAccrualAnnualRatePercent > 0 ? asset.dailyAccrualAnnualRatePercent : 16;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const days = Math.max(0, (asOf.setHours(0, 0, 0, 0) - accrualStartDate.setHours(0, 0, 0, 0)) / dayMs);
+    return Number(Math.pow(1 + annualRate / 100, days / 365.25).toFixed(6));
   }
 
   private toAscii(value: string): string {
