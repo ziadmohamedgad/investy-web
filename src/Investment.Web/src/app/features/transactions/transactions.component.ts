@@ -157,10 +157,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   openNewTransactionDialog(prefilledAsset?: ExternalAssetSearchResult): void {
     const dialogData: TransactionDialogData = {
       mode: 'create',
-      prefilledAsset,
-      knownAssets: this.assets,
-      assetSummaries: this.assetSummaries,
-      assetIdsWithBuy: this.assetIdsWithBuy
+      prefilledAsset
     };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',
@@ -178,11 +175,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
     const dialogRef = this.dialog.open(ManualAssetDialogComponent, {
       width: '640px',
       maxWidth: '95vw',
-      data: {
-        knownAssets: this.assets,
-        assetSummaries: this.assetSummaries,
-        assetIdsWithBuy: this.assetIdsWithBuy
-      }
+      data: {}
     });
 
     dialogRef.afterClosed().subscribe((result: CreateManualAssetDraft | undefined) => {
