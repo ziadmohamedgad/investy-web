@@ -30,6 +30,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   transactions: Transaction[] = [];
   assets: Asset[] = [];
   assetSummaries: AssetSummary[] = [];
+  assetIdsWithBuy: number[] = [];
   dataSource = new MatTableDataSource<Transaction>([]);
   pageSize = 7;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -127,6 +128,9 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.transactions = transactions;
       this.assets = assets;
       this.assetSummaries = summaries;
+      this.assetIdsWithBuy = [...new Set(transactions
+        .filter((transaction) => transaction.transactionType === 'Buy')
+        .map((transaction) => transaction.assetId))];
       this.syncPaginator(transactions.length);
       this.dataSource.data = transactions;
       this.refreshTable();
@@ -155,8 +159,8 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       mode: 'create',
       prefilledAsset,
       knownAssets: this.assets,
-      knownTransactions: this.transactions,
-      assetSummaries: this.assetSummaries
+      assetSummaries: this.assetSummaries,
+      assetIdsWithBuy: this.assetIdsWithBuy
     };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',
@@ -176,8 +180,8 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       maxWidth: '95vw',
       data: {
         knownAssets: this.assets,
-        knownTransactions: this.transactions,
-        assetSummaries: this.assetSummaries
+        assetSummaries: this.assetSummaries,
+        assetIdsWithBuy: this.assetIdsWithBuy
       }
     });
 
@@ -246,8 +250,8 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       mode: 'edit',
       transaction,
       knownAssets: this.assets,
-      knownTransactions: this.transactions,
-      assetSummaries: this.assetSummaries
+      assetSummaries: this.assetSummaries,
+      assetIdsWithBuy: this.assetIdsWithBuy
     };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',

@@ -22,8 +22,8 @@ export interface TransactionDialogData {
   /** Pre-select an asset when opening the stock transaction dialog after manual asset creation. */
   prefilledAsset?: ExternalAssetSearchResult;
   knownAssets?: Asset[];
-  knownTransactions?: Transaction[];
   assetSummaries?: AssetSummary[];
+  assetIdsWithBuy?: number[];
 }
 
 @Component({
@@ -414,13 +414,8 @@ export class TransactionDialogComponent {
       return;
     }
 
-    const editingId = this.data.transaction?.transactionId;
-    const existingTransactions = (this.data.knownTransactions ?? []).filter((transaction) =>
-      transaction.assetId === existingAsset.assetId && transaction.transactionId !== editingId
-    );
-
-    this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
-    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
+    this.sellAllowed = (this.data.assetIdsWithBuy ?? []).includes(existingAsset.assetId);
+    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset);
     this.ensureTransactionTypeAllowed();
   }
 
@@ -430,55 +425,17 @@ export class TransactionDialogComponent {
     }
   }
 
-  private calculateAvailableSellAmount(asset: Asset, transactions: Transaction[]): number {
+  private calculateAvailableSellAmount(asset: Asset): number {
     const summary = this.data.assetSummaries?.find((item) => item.assetId === asset.assetId);
-    const sorted = [...transactions].sort((a, b) => {
-      const dateDiff = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
-      return dateDiff || a.transactionId - b.transactionId;
-    });
-    const accrualStartDate = this.getDailyAccrualStartDate(asset, sorted, new Date(this.form.get('transactionDate')?.value || this.today));
-
-    let unitsHeld = 0;
-    for (const transaction of sorted) {
-      const quantity = asset.isDailyAccrualFund
-        ? this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate) > 0
-          ? transaction.totalAmount / this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate)
-          : 0
-        : transaction.quantity;
-
-      unitsHeld += transaction.transactionType === 'Buy' ? quantity : -quantity;
-    }
+    const editedSell = this.data.transaction?.transactionType === 'Sell' ? this.data.transaction : null;
 
     if (!asset.isDailyAccrualFund) {
-      return Math.max(0, summary?.totalUnitsHeld ?? unitsHeld);
+      const editedQuantity = editedSell?.assetId === asset.assetId ? editedSell.quantity : 0;
+      return Math.max(0, (summary?.totalUnitsHeld ?? 0) + editedQuantity);
     }
 
-    const selectedDate = new Date(this.form.get('transactionDate')?.value || this.today);
-    return Math.max(0, summary?.currentValue ?? unitsHeld * this.getDailyAccrualUnitPrice(asset, selectedDate, accrualStartDate));
-  }
-
-  private getDailyAccrualStartDate(asset: Asset, transactions: Transaction[], candidateDate?: Date): Date {
-    if (!asset.isDailyAccrualFund) {
-      return new Date(asset.createdAt);
-    }
-
-    const dates = transactions.map((transaction) => new Date(transaction.transactionDate));
-    if (candidateDate) {
-      dates.push(candidateDate);
-    }
-
-    return dates.length === 0
-      ? new Date(asset.createdAt)
-      : new Date(Math.min(...dates.map((date) => new Date(date).setHours(0, 0, 0, 0))));
-  }
-
-  private getDailyAccrualUnitPrice(asset: Asset, asOf: Date, accrualStartDate: Date): number {
-    const annualRate = asset.dailyAccrualAnnualRatePercent > 0 ? asset.dailyAccrualAnnualRatePercent : 16;
-    const dayMs = 24 * 60 * 60 * 1000;
-    const asOfDate = new Date(asOf);
-    const startDate = new Date(accrualStartDate);
-    const days = Math.max(0, (asOfDate.setHours(0, 0, 0, 0) - startDate.setHours(0, 0, 0, 0)) / dayMs);
-    return Number(Math.pow(1 + annualRate / 100, days / 365.25).toFixed(6));
+    const editedAmount = editedSell?.assetId === asset.assetId ? editedSell.totalAmount : 0;
+    return Math.max(0, (summary?.currentValue ?? 0) + editedAmount);
   }
 
   private toAscii(value: string): string {

@@ -7,7 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { Asset, AssetSummary, CreateManualAssetDraft, ExternalAssetSearchResult, Transaction } from '../../../core/models/models';
+import { Asset, AssetSummary, CreateManualAssetDraft, ExternalAssetSearchResult } from '../../../core/models/models';
 import { AssetService } from '../../../core/services/asset.service';
 import { BalanceVisibilityService } from '../../../core/services/balance-visibility.service';
 import { Observable, combineLatest, of } from 'rxjs';
@@ -15,8 +15,8 @@ import { debounceTime, distinctUntilChanged, switchMap, startWith } from 'rxjs/o
 
 export interface ManualAssetDialogData {
   knownAssets?: Asset[];
-  knownTransactions?: Transaction[];
   assetSummaries?: AssetSummary[];
+  assetIdsWithBuy?: number[];
 }
 
 @Component({
@@ -362,7 +362,6 @@ export class ManualAssetDialogComponent implements OnInit {
     }
 
     const assets = this.data?.knownAssets ?? [];
-    const transactions = this.data?.knownTransactions ?? [];
     const existingAsset = assets.find((item) => item.assetCode.trim().toUpperCase() === code);
 
     if (!existingAsset) {
@@ -373,9 +372,8 @@ export class ManualAssetDialogComponent implements OnInit {
       return;
     }
 
-    const existingTransactions = transactions.filter((transaction) => transaction.assetId === existingAsset.assetId);
-    this.sellAllowed = existingTransactions.some((transaction) => transaction.transactionType === 'Buy');
-    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset, existingTransactions);
+    this.sellAllowed = (this.data?.assetIdsWithBuy ?? []).includes(existingAsset.assetId);
+    this.availableSellAmount = this.calculateAvailableSellAmount(existingAsset);
     this.sellAvailabilityLoading = false;
     this.ensureTransactionTypeAllowed();
   }
@@ -386,63 +384,13 @@ export class ManualAssetDialogComponent implements OnInit {
     }
   }
 
-  private calculateAvailableSellAmount(asset: Asset, transactions: Transaction[]): number {
+  private calculateAvailableSellAmount(asset: Asset): number {
     const summary = (this.data?.assetSummaries ?? []).find((item) => item.assetId === asset.assetId);
-    if (summary && !asset.isDailyAccrualFund) {
-      return Math.max(0, summary.totalUnitsHeld);
-    }
-
-    if (summary && asset.isDailyAccrualFund) {
-      return Math.max(0, summary.currentValue);
-    }
-
-    const sorted = [...transactions].sort((a, b) => {
-      const dateDiff = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
-      return dateDiff || a.transactionId - b.transactionId;
-    });
-    const accrualStartDate = this.getDailyAccrualStartDate(asset, sorted, new Date(this.form.get('transactionDate')?.value || this.today));
-
-    let unitsHeld = 0;
-    for (const transaction of sorted) {
-      const quantity = asset.isDailyAccrualFund
-        ? this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate) > 0
-          ? transaction.totalAmount / this.getDailyAccrualUnitPrice(asset, new Date(transaction.transactionDate), accrualStartDate)
-          : 0
-        : transaction.quantity;
-
-      unitsHeld += transaction.transactionType === 'Buy' ? quantity : -quantity;
-    }
-
     if (!asset.isDailyAccrualFund) {
-      return Math.max(0, unitsHeld);
+      return Math.max(0, summary?.totalUnitsHeld ?? 0);
     }
 
-    const selectedDate = new Date(this.form.get('transactionDate')?.value || this.today);
-    return Math.max(0, unitsHeld * this.getDailyAccrualUnitPrice(asset, selectedDate, accrualStartDate));
-  }
-
-  private getDailyAccrualStartDate(asset: Asset, transactions: Transaction[], candidateDate?: Date): Date {
-    if (!asset.isDailyAccrualFund) {
-      return new Date(asset.createdAt);
-    }
-
-    const dates = transactions.map((transaction) => new Date(transaction.transactionDate));
-    if (candidateDate) {
-      dates.push(candidateDate);
-    }
-
-    return dates.length === 0
-      ? new Date(asset.createdAt)
-      : new Date(Math.min(...dates.map((date) => new Date(date).setHours(0, 0, 0, 0))));
-  }
-
-  private getDailyAccrualUnitPrice(asset: Asset, asOf: Date, accrualStartDate: Date): number {
-    const annualRate = asset.dailyAccrualAnnualRatePercent > 0 ? asset.dailyAccrualAnnualRatePercent : 16;
-    const dayMs = 24 * 60 * 60 * 1000;
-    const asOfDate = new Date(asOf);
-    const startDate = new Date(accrualStartDate);
-    const days = Math.max(0, (asOfDate.setHours(0, 0, 0, 0) - startDate.setHours(0, 0, 0, 0)) / dayMs);
-    return Number(Math.pow(1 + annualRate / 100, days / 365.25).toFixed(6));
+    return Math.max(0, summary?.currentValue ?? 0);
   }
 
   private toAscii(value: string): string {
