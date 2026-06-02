@@ -169,7 +169,7 @@ public class AssetService : IAssetService
     public async Task<bool> SetCurrentPriceAsync(int assetId, decimal price, DateTime? priceDate = null)
     {
         if (price < 0)
-            throw new InvalidOperationException("Price cannot be negative.");
+            throw new InvalidOperationException("السعر لا يمكن أن يكون سالبًا.");
 
         var asset = await _unitOfWork.Assets.GetByIdAsync(assetId);
         if (asset == null)
@@ -252,7 +252,7 @@ public class AssetService : IAssetService
         if (string.IsNullOrWhiteSpace(code))
             throw new InvalidOperationException("Asset code is required.");
 
-        var normalized = ToAscii(code).Trim().ToUpperInvariant();
+        var normalized = ToAssetCode(code).Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(normalized))
             throw new InvalidOperationException("Asset code must use English letters.");
 
@@ -269,6 +269,10 @@ public class AssetService : IAssetService
     }
 
     private static string ToAscii(string value) => new(value.Where(c => c <= 127).ToArray());
+
+    private static string ToAssetCode(string value) => new(value
+        .Where(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')
+        .ToArray());
 
     public async Task<bool> DeleteAsync(int id)
     {
@@ -291,6 +295,7 @@ public class AssetService : IAssetService
         decimal unitsHeld = 0;
         decimal avgCost = 0;
         decimal realizedPnL = 0;
+        decimal realizedCostBasis = 0;
         decimal totalFeesPaid = 0;
         var effectiveCurrentPrice = GetCurrentPrice(asset, currentPrice, DateTime.UtcNow);
 
@@ -313,7 +318,9 @@ public class AssetService : IAssetService
             {
                 totalFeesPaid += feeAmount;
                 var saleProceeds = txn.TotalAmount + goldPerGramAmount - feeAmount;
-                realizedPnL += saleProceeds - (avgCost * txn.Quantity);
+                var soldCostBasis = avgCost * txn.Quantity;
+                realizedCostBasis += soldCostBasis;
+                realizedPnL += saleProceeds - soldCostBasis;
                 unitsHeld -= txn.Quantity;
             }
         }
@@ -343,6 +350,7 @@ public class AssetService : IAssetService
             UnrealizedPnL = Math.Round(unrealizedPnL, 2),
             UnrealizedPnLPercent = costBasis != 0 ? Math.Round(unrealizedPnL / costBasis * 100, 2) : 0,
             RealizedPnL = Math.Round(realizedPnL, 2),
+            RealizedPnLPercent = realizedCostBasis != 0 ? Math.Round(realizedPnL / realizedCostBasis * 100, 2) : 0,
             TotalPnL = Math.Round(unrealizedPnL + realizedPnL, 2),
             TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0
         };
@@ -353,6 +361,7 @@ public class AssetService : IAssetService
         decimal unitsHeld = 0;
         decimal avgCost = 0;
         decimal realizedPnL = 0;
+        decimal realizedCostBasis = 0;
         decimal totalFeesPaid = 0;
         var accrualStartDate = GetDailyAccrualStartDate(asset, transactions);
 
@@ -379,7 +388,9 @@ public class AssetService : IAssetService
             {
                 totalFeesPaid += feeAmount;
                 var saleProceeds = txn.TotalAmount - feeAmount;
-                realizedPnL += saleProceeds - (avgCost * units);
+                var soldCostBasis = avgCost * units;
+                realizedCostBasis += soldCostBasis;
+                realizedPnL += saleProceeds - soldCostBasis;
                 unitsHeld -= units;
             }
         }
@@ -408,6 +419,7 @@ public class AssetService : IAssetService
             UnrealizedPnL = Math.Round(unrealizedPnL, 2),
             UnrealizedPnLPercent = costBasis != 0 ? Math.Round(unrealizedPnL / costBasis * 100, 2) : 0,
             RealizedPnL = Math.Round(realizedPnL, 2),
+            RealizedPnLPercent = realizedCostBasis != 0 ? Math.Round(realizedPnL / realizedCostBasis * 100, 2) : 0,
             TotalPnL = Math.Round(unrealizedPnL + realizedPnL, 2),
             TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0
         };

@@ -62,6 +62,7 @@ export class TransactionDialogComponent {
   sellAllowed = false;
   sellAvailabilityLoading = false;
   availableSellAmount = 0;
+  availableSellMarketValue = 0;
   hideBalances$!: Observable<boolean>;
 
   constructor(
@@ -107,6 +108,7 @@ export class TransactionDialogComponent {
     }
 
     this.form.get('transactionDate')!.valueChanges.subscribe(() => this.refreshSellAvailability());
+    this.form.get('transactionType')!.valueChanges.subscribe(() => this.refreshSellAvailability());
 
     const assetQueryControl = this.form.get('assetQuery')!;
     (assetQueryControl.valueChanges as any).pipe(
@@ -119,7 +121,7 @@ export class TransactionDialogComponent {
           return of([] as ExternalAssetSearchResult[]);
         }
 
-        const normalized = this.toAscii(value?.trim() ?? '');
+        const normalized = this.toAssetCode(value?.trim() ?? '');
         if (normalized.length < 1) {
           this.selectedAsset = null;
           this.searchLoading = false;
@@ -140,7 +142,11 @@ export class TransactionDialogComponent {
   }
 
   get transactionTypeOptions(): { value: string; label: string; disabled?: boolean }[] {
-    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    return source.map((option) => ({
+      ...option,
+      disabled: option.value === 'Sell' && !this.sellAllowed
+    }));
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -158,7 +164,7 @@ export class TransactionDialogComponent {
   }
 
   submit(): void {
-    if (this.form.invalid || this.sellNetInvalid) {
+    if (this.form.invalid || this.sellBlocked || this.sellExceedsAvailable || this.sellNetInvalid || this.sellExceedsMarketValue) {
       this.form.markAllAsTouched();
       return;
     }
@@ -204,7 +210,7 @@ export class TransactionDialogComponent {
       return;
     }
 
-    const next = this.toAscii(value).toUpperCase();
+    const next = this.toAssetCode(value).toUpperCase();
     if (next !== value) {
       control?.setValue(next, { emitEvent: true });
     }
@@ -282,16 +288,38 @@ export class TransactionDialogComponent {
   }
 
   get sellBlockedHint(): string | null {
-    return null;
+    if (!this.selectedAsset || this.sellAllowed || this.sellAvailabilityLoading) {
+      return null;
+    }
+
+    return this.isDailyAccrualFundSelected
+      ? 'السحب متاح فقط بعد وجود إيداع سابق لهذا الأصل.'
+      : 'البيع متاح فقط بعد وجود عملية شراء سابقة لهذا الأصل.';
+  }
+
+  get sellBlocked(): boolean {
+    return this.form.get('transactionType')?.value === 'Sell' && !this.sellAllowed;
   }
 
   get sellExceedsAvailable(): boolean {
-    return false;
+    if (this.form.get('transactionType')?.value !== 'Sell') {
+      return false;
+    }
+
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return quantity > 0 && this.availableSellAmount > 0 && quantity > this.availableSellAmount + 0.0000001;
   }
 
   get sellNetInvalid(): boolean {
     const quantity = Number(this.form.get('quantity')?.value ?? 0);
-    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount <= 0;
+    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount < 0;
+  }
+
+  get sellExceedsMarketValue(): boolean {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return this.form.get('transactionType')?.value === 'Sell'
+      && quantity > 0
+      && this.transactionNetAmount > this.availableSellMarketValue + 0.01;
   }
 
   get transactionNetAmount(): number {
@@ -323,7 +351,10 @@ export class TransactionDialogComponent {
   }
 
   get availableSellLabel(): string {
-    return '0.00';
+    return this.availableSellAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: this.isDailyAccrualFundSelected ? 2 : 5
+    });
   }
 
   private syncGoldMode(enabled: boolean): void {
@@ -377,29 +408,60 @@ export class TransactionDialogComponent {
   };
 
   private refreshSellAvailability(asset = this.selectedAsset): void {
-    this.sellAllowed = true;
-    this.availableSellAmount = 0;
+    if (!asset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.availableSellMarketValue = 0;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    const normalizedCode = asset.assetCode.trim().toUpperCase();
+    const existingAsset = this.data.transaction
+      ? this.data.knownAssets?.find((item) => item.assetId === this.data.transaction!.assetId)
+      : this.data.knownAssets?.find((item) => item.assetCode.trim().toUpperCase() === normalizedCode);
+
+    if (!existingAsset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.availableSellMarketValue = 0;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    this.sellAllowed = (this.data.assetIdsWithBuy ?? []).includes(existingAsset.assetId);
+    this.calculateAvailableSellValues(existingAsset);
+    this.ensureTransactionTypeAllowed();
   }
 
   private ensureTransactionTypeAllowed(): void {
-    return;
+    if (!this.sellAllowed && this.form.get('transactionType')?.value === 'Sell') {
+      this.form.get('transactionType')?.setValue('Buy', { emitEvent: false });
+    }
   }
 
-  private calculateAvailableSellAmount(asset: Asset): number {
+  private calculateAvailableSellValues(asset: Asset): void {
     const summary = this.data.assetSummaries?.find((item) => item.assetId === asset.assetId);
     const editedSell = this.data.transaction?.transactionType === 'Sell' ? this.data.transaction : null;
 
     if (!asset.isDailyAccrualFund) {
       const editedQuantity = editedSell?.assetId === asset.assetId ? editedSell.quantity : 0;
-      return Math.max(0, (summary?.totalUnitsHeld ?? 0) + editedQuantity);
+      this.availableSellAmount = Math.max(0, (summary?.totalUnitsHeld ?? 0) + editedQuantity);
+    } else {
+      const editedAmount = editedSell?.assetId === asset.assetId ? editedSell.totalAmount : 0;
+      this.availableSellAmount = Math.max(0, (summary?.currentValue ?? 0) + editedAmount);
     }
 
-    const editedAmount = editedSell?.assetId === asset.assetId ? editedSell.totalAmount : 0;
-    return Math.max(0, (summary?.currentValue ?? 0) + editedAmount);
+    const editedNet = editedSell?.assetId === asset.assetId ? editedSell.netAmount : 0;
+    this.availableSellMarketValue = Math.max(0, (summary?.currentValue ?? 0) + editedNet);
   }
 
   private toAscii(value: string): string {
     return value.replace(/[^\x00-\x7F]/g, '');
+  }
+
+  private toAssetCode(value: string): string {
+    return value.replace(/[^A-Za-z]/g, '');
   }
 }
 

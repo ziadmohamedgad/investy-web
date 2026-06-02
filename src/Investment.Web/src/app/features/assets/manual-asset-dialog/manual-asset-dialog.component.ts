@@ -61,6 +61,7 @@ export class ManualAssetDialogComponent implements OnInit {
   sellAllowed = false;
   sellAvailabilityLoading = false;
   availableSellAmount = 0;
+  availableSellMarketValue = 0;
   hideBalances$!: Observable<boolean>;
 
   constructor(
@@ -169,7 +170,7 @@ export class ManualAssetDialogComponent implements OnInit {
   sanitizeTextControl(controlName: 'assetCode' | 'assetName', uppercase = false): void {
     const control = this.form.get(controlName);
     const value = String(control?.value ?? '');
-    const sanitized = this.toAscii(value);
+    const sanitized = controlName === 'assetCode' ? this.toAssetCode(value) : this.toAscii(value);
     const next = uppercase ? sanitized.toUpperCase() : sanitized;
     if (next !== value) {
       control?.setValue(next, { emitEvent: false });
@@ -191,7 +192,11 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   get transactionTypeOptions(): { value: string; label: string; disabled?: boolean }[] {
-    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    return source.map((option) => ({
+      ...option,
+      disabled: option.value === 'Sell' && !this.sellAllowed
+    }));
   }
 
   get isGoldSelected(): boolean {
@@ -216,20 +221,46 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   get sellBlockedHint(): string | null {
-    return null;
+    const code = String(this.form.get('assetCode')?.value ?? '').trim();
+    if (!code || this.sellAllowed || this.sellAvailabilityLoading) {
+      return null;
+    }
+
+    return this.isDailyAccrualFundSelected
+      ? 'السحب متاح فقط بعد وجود إيداع سابق لهذا الأصل.'
+      : 'البيع متاح فقط بعد وجود عملية شراء سابقة لهذا الأصل.';
+  }
+
+  get sellBlocked(): boolean {
+    return this.form.get('transactionType')?.value === 'Sell' && !this.sellAllowed;
   }
 
   get sellExceedsAvailable(): boolean {
-    return false;
+    if (this.form.get('transactionType')?.value !== 'Sell') {
+      return false;
+    }
+
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return quantity > 0 && this.availableSellAmount > 0 && quantity > this.availableSellAmount + 0.0000001;
   }
 
   get availableSellLabel(): string {
-    return '0.00';
+    return this.availableSellAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: this.isDailyAccrualFundSelected ? 2 : 5
+    });
   }
 
   get sellNetInvalid(): boolean {
     const quantity = Number(this.form.get('quantity')?.value ?? 0);
-    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount <= 0;
+    return this.form.get('transactionType')?.value === 'Sell' && quantity > 0 && this.transactionNetAmount < 0;
+  }
+
+  get sellExceedsMarketValue(): boolean {
+    const quantity = Number(this.form.get('quantity')?.value ?? 0);
+    return this.form.get('transactionType')?.value === 'Sell'
+      && quantity > 0
+      && this.transactionNetAmount > this.availableSellMarketValue + 0.01;
   }
 
   get transactionNetAmount(): number {
@@ -275,7 +306,7 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid || this.sellNetInvalid) {
+    if (this.form.invalid || this.sellBlocked || this.sellExceedsAvailable || this.sellNetInvalid || this.sellExceedsMarketValue) {
       this.form.markAllAsTouched();
       return;
     }
@@ -289,7 +320,7 @@ export class ManualAssetDialogComponent implements OnInit {
     const finalAssetType = isDailyAccrualFund ? 'Fund' : value.assetType!;
 
     this.dialogRef.close({
-      assetCode: (isDailyAccrualFund ? 'TCD' : this.toAscii(value.assetCode!)).trim().toUpperCase(),
+      assetCode: (isDailyAccrualFund ? 'TCD' : this.toAssetCode(value.assetCode!)).trim().toUpperCase(),
       assetName: (isDailyAccrualFund ? 'Thndr Cloud Daily' : this.toAscii(value.assetName!)).trim(),
       assetType: finalAssetType,
 
@@ -334,25 +365,56 @@ export class ManualAssetDialogComponent implements OnInit {
   };
 
   private refreshSellAvailability(): void {
-    this.sellAllowed = true;
-    this.availableSellAmount = 0;
+    const code = String(this.form.get('assetCode')?.value ?? '').trim().toUpperCase();
+    if (!code) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.availableSellMarketValue = 0;
+      this.sellAvailabilityLoading = false;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    const assets = this.data?.knownAssets ?? [];
+    const existingAsset = assets.find((item) => item.assetCode.trim().toUpperCase() === code);
+
+    if (!existingAsset) {
+      this.sellAllowed = false;
+      this.availableSellAmount = 0;
+      this.availableSellMarketValue = 0;
+      this.sellAvailabilityLoading = false;
+      this.ensureTransactionTypeAllowed();
+      return;
+    }
+
+    this.sellAllowed = (this.data?.assetIdsWithBuy ?? []).includes(existingAsset.assetId);
+    this.calculateAvailableSellValues(existingAsset);
     this.sellAvailabilityLoading = false;
+    this.ensureTransactionTypeAllowed();
   }
 
   private ensureTransactionTypeAllowed(): void {
-    return;
+    if (!this.sellAllowed && this.form.get('transactionType')?.value === 'Sell') {
+      this.form.get('transactionType')?.setValue('Buy', { emitEvent: false });
+    }
   }
 
-  private calculateAvailableSellAmount(asset: Asset): number {
+  private calculateAvailableSellValues(asset: Asset): void {
     const summary = (this.data?.assetSummaries ?? []).find((item) => item.assetId === asset.assetId);
     if (!asset.isDailyAccrualFund) {
-      return Math.max(0, summary?.totalUnitsHeld ?? 0);
+      this.availableSellAmount = Math.max(0, summary?.totalUnitsHeld ?? 0);
+    } else {
+      this.availableSellAmount = Math.max(0, summary?.currentValue ?? 0);
     }
 
-    return Math.max(0, summary?.currentValue ?? 0);
+    this.availableSellMarketValue = Math.max(0, summary?.currentValue ?? 0);
   }
 
   private toAscii(value: string): string {
     return value.replace(/[^\x00-\x7F]/g, '');
+  }
+
+  private toAssetCode(value: string): string {
+    return value.replace(/[^A-Za-z]/g, '');
   }
 }

@@ -17,7 +17,7 @@ public class ExcelExportService : IExcelExportService
         var worksheet = workbook.Worksheets.Add("Holdings");
 
         // Headers
-        var headers = new[] { "Asset", "Type", "Units", "Avg Buy Price", "Current Price", "Total Cost", "Current Value", "Unrealized P&L", "Unrealized %", "Realized P&L", "Total P&L %" };
+        var headers = new[] { "Asset", "Type", "Units", "Avg Buy Price", "Current Price", "Total Cost", "Current Value", "Unrealized P&L", "Unrealized %", "Realized P&L", "Realized %" };
         for (int i = 0; i < headers.Length; i++)
         {
             worksheet.Cell(1, i + 1).Value = headers[i];
@@ -39,7 +39,7 @@ public class ExcelExportService : IExcelExportService
             worksheet.Cell(row, 8).Value = (double)h.UnrealizedPnL;
             worksheet.Cell(row, 9).Value = (double)h.UnrealizedPnLPercent;
             worksheet.Cell(row, 10).Value = (double)h.RealizedPnL;
-            worksheet.Cell(row, 11).Value = (double)h.TotalPnLPercent;
+            worksheet.Cell(row, 11).Value = (double)h.RealizedPnLPercent;
 
             // Color P&L cells
             var pnlColor = h.UnrealizedPnL >= 0 ? XLColor.Green : XLColor.Red;

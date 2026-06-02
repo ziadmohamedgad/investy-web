@@ -20,6 +20,7 @@ public class HoldingDto
     public decimal UnrealizedPnL { get; set; }
     public decimal UnrealizedPnLPercent { get; set; }
     public decimal RealizedPnL { get; set; }
+    public decimal RealizedPnLPercent { get; set; }
     public decimal TotalPnL { get; set; }
     public decimal TotalPnLPercent { get; set; }
 }

@@ -66,6 +66,7 @@ public class AnalyticsService : IAnalyticsService
                 UnrealizedPnL = summary.UnrealizedPnL,
                 UnrealizedPnLPercent = summary.UnrealizedPnLPercent,
                 RealizedPnL = summary.RealizedPnL,
+                RealizedPnLPercent = summary.RealizedPnLPercent,
                 TotalPnL = summary.TotalPnL,
                 TotalPnLPercent = summary.TotalPnLPercent
             });

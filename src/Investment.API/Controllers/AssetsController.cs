@@ -69,7 +69,7 @@ public class AssetsController : ControllerBase
         if (string.IsNullOrWhiteSpace(query))
             return Ok(Array.Empty<ExternalAssetSearchDto>());
 
-        var q = query.Trim();
+        var q = ToAssetCode(query).Trim().ToUpperInvariant();
         if (q.Length == 0)
             return Ok(Array.Empty<ExternalAssetSearchDto>());
 
@@ -358,8 +358,12 @@ public class AssetsController : ControllerBase
         if (string.IsNullOrWhiteSpace(code))
             return string.Empty;
 
-        return code.Trim().ToUpperInvariant();
+        return ToAssetCode(code).Trim().ToUpperInvariant();
     }
+
+    private static string ToAssetCode(string value) => new(value
+        .Where(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')
+        .ToArray());
 
     private static string NormalizeRequiredText(string? value, int maxLength, string fallback = "Unknown")
     {

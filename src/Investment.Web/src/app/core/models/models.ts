@@ -45,6 +45,7 @@ export interface AssetSummary {
   unrealizedPnL: number;
   unrealizedPnLPercent: number;
   realizedPnL: number;
+  realizedPnLPercent: number;
   totalPnL: number;
   totalPnLPercent: number;
 }
@@ -211,6 +212,7 @@ export interface Holding {
   unrealizedPnL: number;
   unrealizedPnLPercent: number;
   realizedPnL: number;
+  realizedPnLPercent: number;
   totalPnL: number;
   totalPnLPercent: number;
 }

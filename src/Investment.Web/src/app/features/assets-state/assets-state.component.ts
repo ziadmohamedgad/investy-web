@@ -30,7 +30,7 @@ import { forkJoin, of } from 'rxjs';
 })
 export class AssetsStateComponent implements OnInit, AfterViewInit {
   summaries: AssetSummary[] = [];
-  displayedColumns = ['assetCode', 'averageBuyPrice', 'currentPrice', 'totalUnitsHeld', 'totalPaidIncludingFees', 'currentValue', 'totalPnL', 'totalPnLPercent', 'actions'];
+  displayedColumns = ['assetCode', 'averageBuyPrice', 'currentPrice', 'totalUnitsHeld', 'totalPaidIncludingFees', 'currentValue', 'unrealizedPnL', 'realizedPnL', 'actions'];
   loading = true;
   error: string | null = null;
   syncingAssetId: number | null = null;

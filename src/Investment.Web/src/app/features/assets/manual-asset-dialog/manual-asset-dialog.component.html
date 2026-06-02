@@ -71,7 +71,9 @@
     <div class="row">
       <mat-form-field appearance="outline" class="field">
         <mat-label>{{ quantityLabel }}</mat-label>
-        <input matInput type="number" formControlName="quantity" step="0.0001" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <input matInput type="number" formControlName="quantity" step="0.0001" [max]="form.get('transactionType')?.value === 'Sell' ? availableSellAmount : null" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <mat-hint *ngIf="form.get('transactionType')?.value === 'Sell' && sellAllowed">المتاح: {{ availableSellLabel }}</mat-hint>
+        <mat-error *ngIf="sellExceedsAvailable">القيمة تتخطى المتاح لهذا الأصل</mat-error>
         <mat-error *ngIf="form.get('quantity')?.hasError('required')">
           {{ isDailyAccrualFundSelected ? 'المبلغ مطلوب' : 'الكمية مطلوبة' }}
         </mat-error>
@@ -95,15 +97,16 @@
       <mat-error *ngIf="form.get('fees')?.hasError('min')">الرسوم لا يمكن أن تكون سالبة</mat-error>
     </mat-form-field>
 
-    <div class="transaction-total" [class.is-danger]="sellExceedsAvailable || sellNetInvalid">
-      <span>إجمالي العملية</span>
+    <div class="transaction-total" [class.is-danger]="sellExceedsAvailable || sellNetInvalid || sellExceedsMarketValue">
+      <span>الإجمالي</span>
       <strong class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ transactionTotalLabel }} ج.م</strong>
-      <small *ngIf="sellNetInvalid">صافي البيع بعد الرسوم يجب أن يكون أكبر من صفر.</small>
+      <small *ngIf="sellNetInvalid">صافي البيع بعد الرسوم لا يمكن أن يكون أقل من صفر.</small>
+      <small *ngIf="sellExceedsMarketValue">صافي البيع بعد الرسوم يجب ألا يتخطى القيمة السوقية الحالية للأصل.</small>
     </div>
   </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button type="button" (click)="cancel()">إلغاء</button>
-  <button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="form.invalid || sellExceedsAvailable || sellNetInvalid">{{ submitLabel }}</button>
+  <button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="form.invalid || sellBlocked || sellExceedsAvailable || sellNetInvalid || sellExceedsMarketValue">{{ submitLabel }}</button>
 </mat-dialog-actions>

@@ -90,7 +90,7 @@ export class AssetDialogComponent {
 
     const value = this.form.getRawValue();
     this.dialogRef.close({
-      assetCode: this.toAscii(value.assetCode!).trim(),
+      assetCode: this.toAssetCode(value.assetCode!).trim().toUpperCase(),
       assetName: this.toAscii(value.assetName!).trim(),
       assetType: value.assetType!,
       currency: value.currency!,
@@ -102,7 +102,7 @@ export class AssetDialogComponent {
   sanitizeTextControl(controlName: 'assetCode' | 'assetName' | 'externalTicker', uppercase = false): void {
     const control = this.form.get(controlName);
     const value = String(control?.value ?? '');
-    const sanitized = this.toAscii(value);
+    const sanitized = controlName === 'assetCode' ? this.toAssetCode(value) : this.toAscii(value);
     const next = uppercase ? sanitized.toUpperCase() : sanitized;
     if (next !== value) {
       control?.setValue(next, { emitEvent: false });
@@ -120,6 +120,10 @@ export class AssetDialogComponent {
 
   private toAscii(value: string): string {
     return value.replace(/[^\x00-\x7F]/g, '');
+  }
+
+  private toAssetCode(value: string): string {
+    return value.replace(/[^A-Za-z]/g, '');
   }
 }
 

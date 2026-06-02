@@ -147,7 +147,7 @@ public class ExcelSyncService : IExcelSyncService
     private static void WriteAssetsStateSheet(XLWorkbook workbook, IReadOnlyCollection<AssetSummaryDto> summaries)
     {
         var worksheet = workbook.Worksheets.Add("Assets State");
-        WriteHeaders(worksheet, "كود الأصل", "نوع الأصل", "متوسط الشراء", "السعر الحالي", "الكمية", "إجمالي المدفوع شامل الرسوم", "القيمة السوقية", "إجمالي الربح/الخسارة", "نسبة الربح/الخسارة");
+        WriteHeaders(worksheet, "كود الأصل", "نوع الأصل", "متوسط الشراء", "السعر الحالي", "الكمية", "إجمالي المدفوع شامل الرسوم", "القيمة السوقية", "إجمالي الربح/الخسارة غير المحققة", "نسبة الربح/الخسارة غير المحققة", "إجمالي الربح/الخسارة المحققة", "نسبة الربح/الخسارة المحققة");
 
         var row = 2;
         foreach (var summary in summaries.OrderByDescending(x => x.CurrentValue))
@@ -159,14 +159,17 @@ public class ExcelSyncService : IExcelSyncService
             worksheet.Cell(row, 5).Value = summary.TotalUnitsHeld;
             worksheet.Cell(row, 6).Value = summary.TotalPaidIncludingFees;
             worksheet.Cell(row, 7).Value = summary.CurrentValue;
-            worksheet.Cell(row, 8).Value = summary.TotalPnL;
-            worksheet.Cell(row, 9).Value = summary.TotalPnLPercent;
+            worksheet.Cell(row, 8).Value = summary.UnrealizedPnL;
+            worksheet.Cell(row, 9).Value = summary.UnrealizedPnLPercent;
+            worksheet.Cell(row, 10).Value = summary.RealizedPnL;
+            worksheet.Cell(row, 11).Value = summary.RealizedPnLPercent;
             row++;
         }
 
-        ApplyDataSheetStyle(worksheet, row - 1, 9, "AssetsStateTable", XLColor.FromHtml("#1D4ED8"));
-        ApplyNumberFormat(worksheet, 2, row - 1, 3, 9);
+        ApplyDataSheetStyle(worksheet, row - 1, 11, "AssetsStateTable", XLColor.FromHtml("#1D4ED8"));
+        ApplyNumberFormat(worksheet, 2, row - 1, 3, 11);
         worksheet.Column(9).Style.NumberFormat.Format = "0.00\"%\"";
+        worksheet.Column(11).Style.NumberFormat.Format = "0.00\"%\"";
     }
 
     private static void WriteDashboardSheet(XLWorkbook workbook, PortfolioAnalyticsSummaryDto summary, IReadOnlyCollection<AssetSummaryDto> holdings)

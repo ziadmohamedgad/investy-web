@@ -66,6 +66,7 @@ public class TransactionService : ITransactionService
             : new List<Transaction>();
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
         var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
+        await ValidateSellAgainstCurrentMarketValueAsync(asset, existingTxnsForAsset, txnType, normalized.NetAmount);
 
         var transaction = new Transaction
         {
@@ -143,6 +144,7 @@ public class TransactionService : ITransactionService
             .ToList();
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
         var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
+        await ValidateSellAgainstCurrentMarketValueAsync(asset, existingTxns, txnType, normalized.NetAmount);
 
         transaction.AssetId = dto.AssetId;
         transaction.TransactionType = txnType;
@@ -185,9 +187,9 @@ public class TransactionService : ITransactionService
                 ? totalAmount + goldPerGramAmount + fees
                 : totalAmount + goldPerGramAmount - fees;
 
-            if (txnType == TransactionType.Sell && netAmount <= 0)
+            if (txnType == TransactionType.Sell && netAmount < 0)
             {
-                throw new InvalidOperationException("Sale proceeds after fees must be greater than zero.");
+                throw new InvalidOperationException("صافي البيع بعد الرسوم لا يمكن أن يكون أقل من صفر.");
             }
 
             return (quantity, pricePerUnit, totalAmount, netAmount);
@@ -205,9 +207,9 @@ public class TransactionService : ITransactionService
             ? amount + fees
             : amount - fees;
 
-        if (txnType == TransactionType.Sell && net <= 0)
+        if (txnType == TransactionType.Sell && net < 0)
         {
-            throw new InvalidOperationException("Withdrawal proceeds after fees must be greater than zero.");
+            throw new InvalidOperationException("صافي السحب بعد الرسوم لا يمكن أن يكون أقل من صفر.");
         }
 
         return (units, unitPrice, amount, net);
@@ -217,7 +219,27 @@ public class TransactionService : ITransactionService
     {
         if (transactionDate.Date > DateTime.Now.Date)
         {
-            throw new InvalidOperationException("Cannot record a transaction with a future date.");
+            throw new InvalidOperationException("لا يمكن تسجيل عملية بتاريخ مستقبلي.");
+        }
+    }
+
+    private async Task ValidateSellAgainstCurrentMarketValueAsync(
+        Asset asset,
+        List<Transaction> existingTransactions,
+        TransactionType txnType,
+        decimal netAmount)
+    {
+        if (txnType != TransactionType.Sell || netAmount <= 0)
+        {
+            return;
+        }
+
+        var latestPrice = await _unitOfWork.Prices.GetLatestByAssetIdAsync(asset.AssetId);
+        var currentPrice = latestPrice?.PriceValue ?? 0m;
+        var currentSummary = AssetService.CalculateAssetSummary(asset, existingTransactions, currentPrice);
+        if (netAmount > currentSummary.CurrentValue + 0.01m)
+        {
+            throw new InvalidOperationException("صافي البيع بعد الرسوم يجب ألا يتخطى القيمة السوقية الحالية للأصل.");
         }
     }
 
@@ -239,15 +261,16 @@ public class TransactionService : ITransactionService
 
             if (!hasBuy)
             {
-                var action = asset.IsDailyAccrualFund ? "withdraw" : "sell";
-                var prerequisite = asset.IsDailyAccrualFund ? "deposit" : "buy";
-                throw new InvalidOperationException($"Cannot {action} before recording a previous {prerequisite} transaction for this asset.");
+                throw new InvalidOperationException(asset.IsDailyAccrualFund
+                    ? "لا يمكن تسجيل سحب قبل وجود إيداع سابق لهذا الأصل."
+                    : "لا يمكن تسجيل بيع قبل وجود عملية شراء سابقة لهذا الأصل.");
             }
 
             if (quantity > unitsHeld + QuantityTolerance)
             {
-                var action = asset.IsDailyAccrualFund ? "withdraw" : "sell";
-                throw new InvalidOperationException($"Cannot {action} {quantity:N5} units. Only {unitsHeld:N5} units are available at that transaction date.");
+                throw new InvalidOperationException(asset.IsDailyAccrualFund
+                    ? $"لا يمكن سحب مبلغ يتخطى المتاح لهذا الأصل. المتاح عند تاريخ العملية {unitsHeld:N5} وحدة."
+                    : $"لا يمكن بيع كمية تتخطى المتاح لهذا الأصل. المتاح عند تاريخ العملية {unitsHeld:N5}.");
             }
 
             unitsHeld -= quantity;

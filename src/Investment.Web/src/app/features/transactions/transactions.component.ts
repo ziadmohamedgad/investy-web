@@ -157,7 +157,10 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   openNewTransactionDialog(prefilledAsset?: ExternalAssetSearchResult): void {
     const dialogData: TransactionDialogData = {
       mode: 'create',
-      prefilledAsset
+      prefilledAsset,
+      knownAssets: this.assets,
+      assetSummaries: this.assetSummaries,
+      assetIdsWithBuy: this.assetIdsWithBuy
     };
     const dialogRef = this.dialog.open(TransactionDialogComponent, {
       width: '640px',
@@ -175,7 +178,11 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
     const dialogRef = this.dialog.open(ManualAssetDialogComponent, {
       width: '640px',
       maxWidth: '95vw',
-      data: {}
+      data: {
+        knownAssets: this.assets,
+        assetSummaries: this.assetSummaries,
+        assetIdsWithBuy: this.assetIdsWithBuy
+      }
     });
 
     dialogRef.afterClosed().subscribe((result: CreateManualAssetDraft | undefined) => {
@@ -211,7 +218,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
         )
       ).subscribe({
         next: () => {
-          this.showSuccess(`تمت إضافة الأصل ${result.assetCode} والمعاملة بنجاح.`);
+          this.showSuccess('تم إجراء العملية.');
           this.loadTransactions(false);
           this.refreshService.notify('transactions:changed');
           this.cdr.markForCheck();
@@ -299,7 +306,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
 
         request.subscribe({
           next: () => {
-            this.showSuccess(mode === 'edit' ? 'تم تعديل المعاملة.' : 'تم حفظ المعاملة.');
+            this.showSuccess(mode === 'edit' ? 'تم تعديل المعاملة.' : 'تم إجراء العملية.');
             this.loadTransactions(false);
             this.refreshService.notify('transactions:changed');
           },
