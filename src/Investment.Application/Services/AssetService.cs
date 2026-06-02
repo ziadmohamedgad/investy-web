@@ -328,7 +328,7 @@ public class AssetService : IAssetService
         }
 
         var costBasis = avgCost * unitsHeld;
-        var isClosedPosition = transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) > 0.005m;
+        var isClosedPosition = Math.Abs(unitsHeld) <= QuantityTolerance;
         var currentValue = asset.AssetType == AssetType.Gold
             ? unitsHeld * (effectiveCurrentPrice + asset.GoldCashbackPerGram)
             : unitsHeld * effectiveCurrentPrice;
@@ -401,7 +401,7 @@ public class AssetService : IAssetService
 
         var effectiveCurrentPrice = GetDailyAccrualUnitPrice(asset, DateTime.UtcNow, accrualStartDate);
         var costBasis = avgCost * unitsHeld;
-        var isClosedPosition = transactions.Count == 0 && Math.Abs(asset.ClosedRealizedPnL) > 0.005m;
+        var isClosedPosition = Math.Abs(unitsHeld) <= QuantityTolerance;
         var currentValue = unitsHeld * effectiveCurrentPrice;
         var unrealizedPnL = currentValue - costBasis;
 

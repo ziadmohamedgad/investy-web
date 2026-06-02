@@ -29,35 +29,35 @@
 
       <ng-container matColumnDef="averageBuyPrice">
         <th mat-header-cell *matHeaderCellDef>متوسط الشراء</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.averageBuyPrice | number:'1.2-5' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ (s.isClosedPosition ? 0 : s.averageBuyPrice) | number:'1.2-5' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="currentPrice">
         <th mat-header-cell *matHeaderCellDef>السعر الحالي</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentPrice | number:'1.2-5' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ (s.isClosedPosition ? 0 : s.currentPrice) | number:'1.2-5' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="totalUnitsHeld">
         <th mat-header-cell *matHeaderCellDef>الكمية</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition && !s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalUnitsHeld | number:'1.0-1' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isDailyAccrualFund; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ (s.isClosedPosition ? 0 : s.totalUnitsHeld) | number:'1.0-1' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="totalPaidIncludingFees">
         <th mat-header-cell *matHeaderCellDef>إجمالي المدفوع شامل الرسوم</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.totalPaidIncludingFees | number:'1.2-2' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ (s.isClosedPosition ? 0 : s.totalPaidIncludingFees) | number:'1.2-2' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="currentValue">
         <th mat-header-cell *matHeaderCellDef>القيمة السوقية</th>
-        <td mat-cell *matCellDef="let s"><span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ s.currentValue | number:'1.2-2' }}</span></td>
+        <td mat-cell *matCellDef="let s"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ (s.isClosedPosition ? 0 : s.currentValue) | number:'1.2-2' }}</span></td>
       </ng-container>
 
       <ng-container matColumnDef="unrealizedPnL">
         <th mat-header-cell *matHeaderCellDef>إجمالي الربح/الخسارة غير المحققة</th>
         <td mat-cell *matCellDef="let s" [ngClass]="getPnLClass(s.unrealizedPnL)">
-          <span *ngIf="!s.isClosedPosition; else dailyDash" class="balance-value" [class.is-hidden]="hideBalances$ | async">
-            {{ s.unrealizedPnL | number:'1.2-2' }}
-            <small class="pnl-percent">({{ s.unrealizedPnLPercent | number:'1.2-2' }}%)</small>
+          <span class="balance-value" [class.is-hidden]="hideBalances$ | async">
+            {{ (s.isClosedPosition ? 0 : s.unrealizedPnL) | number:'1.2-2' }}
+            <small class="pnl-percent">({{ (s.isClosedPosition ? 0 : s.unrealizedPnLPercent) | number:'1.2-2' }}%)</small>
           </span>
         </td>
       </ng-container>
