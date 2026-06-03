@@ -297,17 +297,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private assetTypeFilterLabel(type: string): string {
     switch (type) {
       case 'Stock':
-        return 'إلغاء الأسهم';
+        return 'الأسهم';
       case 'Gold':
-        return 'إلغاء الذهب';
+        return 'الذهب';
       case 'Fund':
-        return 'إلغاء الصناديق';
+        return 'الصناديق';
       case 'DailyAccrualFund':
-        return 'إلغاء ثاندر كلاود';
+        return 'الكلاود';
       case 'Other':
-        return 'إلغاء الأصول الأخرى';
+        return 'الأخرى';
       default:
-        return `إلغاء ${type}`;
+        return type;
     }
   }
 
