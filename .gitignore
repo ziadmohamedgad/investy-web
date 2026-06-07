@@ -30,6 +30,7 @@ src/Investment.API/appsettings.*.local.json
 # Local data and exports
 Investy.xlsx
 Eodhd.txt
+INVESTY_HANDOFF_RULES.md
 *.db
 *.sqlite
 *.sqlite3
