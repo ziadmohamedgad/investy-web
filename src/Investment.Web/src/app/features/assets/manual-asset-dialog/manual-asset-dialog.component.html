@@ -86,7 +86,7 @@
       </mat-form-field>
     </div>
 
-    <mat-form-field *ngIf="isGoldSelected" appearance="outline" class="field">
+    <mat-form-field *ngIf="isMetalSelected" appearance="outline" class="field">
       <mat-label>{{ goldAdjustmentLabel }}</mat-label>
       <input matInput type="number" formControlName="manufacturingFeePerGram" step="0.00001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
     </mat-form-field>

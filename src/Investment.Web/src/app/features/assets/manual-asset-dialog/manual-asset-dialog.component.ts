@@ -32,6 +32,19 @@ export interface ManualAssetDialogData {
     MatButtonModule,
     MatAutocompleteModule
   ],
+@Component({
+  selector: 'app-manual-asset-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatAutocompleteModule
+  ],
   templateUrl: './manual-asset-dialog.component.html',
   styleUrl: './manual-asset-dialog.component.scss'
 })
@@ -39,6 +52,7 @@ export class ManualAssetDialogComponent implements OnInit {
   readonly assetTypes = [
     { value: 'DailyAccrualFund', label: 'صندوق ثاندر كلاود لحظي' },
     { value: 'Gold', label: 'ذهب' },
+    { value: 'Silver', label: 'فضة' },
     { value: 'Fund', label: 'صندوق / مؤشر' },
     { value: 'Other', label: 'أخرى (عقار، ممتلكات، إلخ)' }
   ];
@@ -139,6 +153,7 @@ export class ManualAssetDialogComponent implements OnInit {
   private normalizeAssetType(type: string): string {
     const typeMap: { [key: string]: string } = {
       'Gold': 'Gold',
+      'Silver': 'Silver',
       'Fund': 'Fund',
       'DailyAccrualFund': 'DailyAccrualFund',
       'Other': 'Other',
@@ -195,25 +210,26 @@ export class ManualAssetDialogComponent implements OnInit {
     return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
   }
 
-  get isGoldSelected(): boolean {
-    return this.form.get('assetType')?.value === 'Gold';
+  get isMetalSelected(): boolean {
+    const type = this.form.get('assetType')?.value;
+    return type === 'Gold' || type === 'Silver';
   }
 
-  get isGoldBuySelected(): boolean {
-    return this.isGoldSelected && this.form.get('transactionType')?.value === 'Buy';
+  get isMetalBuySelected(): boolean {
+    return this.isMetalSelected && this.form.get('transactionType')?.value === 'Buy';
   }
 
   get quantityLabel(): string {
     if (this.isDailyAccrualFundSelected) return 'المبلغ';
-    return this.isGoldSelected ? 'عدد الجرامات' : 'الكمية';
+    return this.isMetalSelected ? 'عدد الجرامات' : 'الكمية';
   }
 
   get priceLabel(): string {
-    return this.isGoldSelected ? 'السعر للجرام' : 'السعر للوحدة';
+    return this.isMetalSelected ? 'السعر للجرام' : 'السعر للوحدة';
   }
 
   get goldAdjustmentLabel(): string {
-    return this.isGoldBuySelected ? 'المصنعية للجرام' : 'الكاش باك للجرام';
+    return this.isMetalBuySelected ? 'المصنعية للجرام' : 'الكاش باك للجرام';
   }
 
   get sellBlockedHint(): string | null {

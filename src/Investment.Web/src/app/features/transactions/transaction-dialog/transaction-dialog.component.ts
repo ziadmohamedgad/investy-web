@@ -254,7 +254,7 @@ export class TransactionDialogComponent {
       ...extra
     }, { emitEvent: false });
     this.syncDailyAccrualMode(asset.isDailyAccrualFund);
-    this.syncGoldMode(asset.assetType === 'Gold');
+    this.syncMetalMode(asset.assetType === 'Gold' || asset.assetType === 'Silver');
     this.refreshSellAvailability(asset);
   }
 
@@ -286,12 +286,12 @@ export class TransactionDialogComponent {
     return this.selectedAsset?.isDailyAccrualFund ?? false;
   }
 
-  get isGoldSelected(): boolean {
-    return this.selectedAsset?.assetType === 'Gold';
+  get isMetalSelected(): boolean {
+    return this.selectedAsset?.assetType === 'Gold' || this.selectedAsset?.assetType === 'Silver';
   }
 
-  get isGoldBuySelected(): boolean {
-    return this.isGoldSelected && this.form.get('transactionType')?.value === 'Buy';
+  get isMetalBuySelected(): boolean {
+    return this.isMetalSelected && this.form.get('transactionType')?.value === 'Buy';
   }
 
   get isDividendSelected(): boolean {
@@ -311,15 +311,15 @@ export class TransactionDialogComponent {
 
   get quantityLabel(): string {
     if (this.isDailyAccrualFundSelected) return 'المبلغ';
-    return this.isGoldSelected ? 'عدد الجرامات' : 'الوحدات';
+    return this.isMetalSelected ? 'عدد الجرامات' : 'الوحدات';
   }
 
   get priceLabel(): string {
-    return this.isGoldSelected ? 'السعر للجرام' : 'السعر للوحدة';
+    return this.isMetalSelected ? 'السعر للجرام' : 'السعر للوحدة';
   }
 
   get goldAdjustmentLabel(): string {
-    return this.isGoldBuySelected ? 'المصنعية للجرام' : 'الكاش باك للجرام';
+    return this.isMetalBuySelected ? 'المصنعية للجرام' : 'الكاش باك للجرام';
   }
 
   get sellBlockedHint(): string | null {
@@ -372,8 +372,8 @@ export class TransactionDialogComponent {
     const quantity = Number(this.form.get('quantity')?.value ?? 0);
     const price = this.isDailyAccrualFundSelected ? 1 : Number(this.form.get('pricePerUnit')?.value ?? 0);
     const fees = this.isDailyAccrualFundSelected ? 0 : Number(this.form.get('fees')?.value ?? 0);
-    const goldAdjustment = this.isGoldSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
-    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + goldAdjustment;
+    const metalAdjustment = this.isMetalSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
+    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + metalAdjustment;
 
     return type === 'Buy'
       ? gross + fees
@@ -406,17 +406,17 @@ export class TransactionDialogComponent {
     });
   }
 
-  private syncGoldMode(enabled: boolean): void {
-    const manufacturingFeeControl = this.form.get('manufacturingFeePerGram');
-    if (!manufacturingFeeControl) {
-      return;
-    }
+  private syncMetalMode(enabled: boolean): void {
+    const feeControl = this.form.get('manufacturingFeePerGram');
+    if (!feeControl) return;
 
-    if (!enabled) {
-      manufacturingFeeControl.setValue(null, { emitEvent: false });
+    if (enabled) {
+      feeControl.setValidators([Validators.min(0)]);
+    } else {
+      feeControl.clearValidators();
+      feeControl.setValue(null, { emitEvent: false });
     }
-
-    manufacturingFeeControl.updateValueAndValidity({ emitEvent: false });
+    feeControl.updateValueAndValidity({ emitEvent: false });
   }
 
   cancel(): void {
