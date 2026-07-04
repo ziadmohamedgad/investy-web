@@ -271,6 +271,7 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  min-height: 650px; /* Accounts for tall multi-line rows */
 }
 
 .table-container .mat-mdc-table,
