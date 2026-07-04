@@ -46,7 +46,8 @@ export interface TransactionDialogData {
 export class TransactionDialogComponent {
   readonly transactionTypes = [
     { value: 'Buy', label: 'شراء' },
-    { value: 'Sell', label: 'بيع' }
+    { value: 'Sell', label: 'بيع' },
+    { value: 'Dividend', label: 'أرباح' }
   ];
 
   readonly dailyAccrualTransactionTypes = [
@@ -72,15 +73,22 @@ export class TransactionDialogComponent {
     private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
   ) {
+    private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
+    @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
+  ) {
     this.hideBalances$ = this.balanceVisibilityService.hidden$;
     this.form = this.fb.group({
       assetQuery: ['', [Validators.required]],
       transactionType: ['Buy', [Validators.required]],
       transactionDate: [this.today, [Validators.required, this.notFutureDateValidator]],
       quantity: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
-      pricePerUnit: [null as unknown as number, [Validators.required, Validators.min(0)]],
+      pricePerUnit: [null as unknown as number, [Validators.min(0)]],
       manufacturingFeePerGram: [null as unknown as number, [Validators.min(0)]],
       fees: [null as unknown as number, [Validators.min(0)]],
+      dividendKind: ['Cash'],
+      dividendAmount: [null as unknown as number, [Validators.min(0)]],
+      freeSharesQuantity: [null as unknown as number, [Validators.min(0)]],
+      freeSharesMarketPrice: [null as unknown as number, [Validators.min(0)]],
       notes: ['']
     });
 
@@ -100,6 +108,10 @@ export class TransactionDialogComponent {
         pricePerUnit: this.data.transaction.pricePerUnit,
         manufacturingFeePerGram: this.data.transaction.manufacturingFeePerGram ?? 0,
         fees: this.data.transaction.fees ?? 0,
+        dividendKind: this.data.transaction.dividendKind ?? 'Cash',
+        dividendAmount: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Cash' ? this.data.transaction.netAmount : null,
+        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity : null,
+        freeSharesMarketPrice: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.pricePerUnit : null,
         notes: this.data.transaction.notes ?? ''
       });
       this.form.get('assetQuery')!.disable({ emitEvent: false });
@@ -141,8 +153,12 @@ export class TransactionDialogComponent {
     return this.data.mode === 'edit';
   }
 
-  get currentTransactionTypes(): { value: string; label: string }[] {
-    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+  get currentTransactionTypes(): { value: string; label: string; disabled?: boolean }[] {
+    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    return source.map((option) => ({
+      ...option,
+      disabled: (option.value === 'Sell' || option.value === 'Dividend') && !this.sellAllowed
+    }));
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -160,7 +176,7 @@ export class TransactionDialogComponent {
   }
 
   submit(): void {
-    if (this.form.invalid || this.sellBlocked || this.sellExceedsAvailable || this.sellNetInvalid || this.sellExceedsMarketValue) {
+    if (this.form.invalid || this.sellBlocked || this.sellExceedsAvailable || this.sellNetInvalid || this.sellExceedsMarketValue || this.dividendInvalid || this.freeSharesInvalid) {
       this.form.markAllAsTouched();
       return;
     }
@@ -171,16 +187,27 @@ export class TransactionDialogComponent {
     }
 
     const value = this.form.getRawValue();
-    const quantity = Number(value.quantity);
+    const isDividend = value.transactionType === 'Dividend';
+    const isStockDividend = isDividend && value.dividendKind === 'Stock';
+    const isCashDividend = isDividend && value.dividendKind === 'Cash';
+
+    const quantity = isDividend 
+      ? (isStockDividend ? Number(value.freeSharesQuantity) : 0)
+      : Number(value.quantity);
+      
+    const price = isDividend
+      ? (isStockDividend ? Number(value.freeSharesMarketPrice) : 0)
+      : (this.selectedAsset?.isDailyAccrualFund ? 1 : Number(value.pricePerUnit));
 
     this.dialogRef.close({
       asset: this.selectedAsset,
       transactionType: value.transactionType!,
       transactionDate: new Date(value.transactionDate!),
       quantity,
-      pricePerUnit: this.selectedAsset?.isDailyAccrualFund ? 1 : Number(value.pricePerUnit),
-      fees: Number(value.fees ?? 0),
-      manufacturingFeePerGram: Number(value.manufacturingFeePerGram ?? 0),
+      pricePerUnit: price,
+      fees: isDividend ? 0 : Number(value.fees ?? 0),
+      manufacturingFeePerGram: isDividend ? 0 : Number(value.manufacturingFeePerGram ?? 0),
+      dividendKind: isDividend ? value.dividendKind! : undefined,
       notes: value.notes?.trim() || undefined
     });
   }
@@ -221,6 +248,10 @@ export class TransactionDialogComponent {
       pricePerUnit: number;
       manufacturingFeePerGram: number;
       fees: number;
+      dividendKind: string;
+      dividendAmount: number;
+      freeSharesQuantity: number;
+      freeSharesMarketPrice: number;
       notes: string;
     }>
   ): void {
@@ -249,7 +280,7 @@ export class TransactionDialogComponent {
       priceControl.clearValidators();
       priceControl.setValue(1, { emitEvent: false });
     } else {
-      priceControl.setValidators([Validators.required, Validators.min(0)]);
+      priceControl.setValidators([Validators.min(0)]);
       if (!priceControl.value || Number(priceControl.value) <= 0) {
         priceControl.setValue(null, { emitEvent: false });
       }
@@ -270,9 +301,24 @@ export class TransactionDialogComponent {
     return this.isGoldSelected && this.form.get('transactionType')?.value === 'Buy';
   }
 
+  get isDividendSelected(): boolean {
+    return this.form.get('transactionType')?.value === 'Dividend';
+  }
+
+  get dividendInvalid(): boolean {
+    const amount = Number(this.form.get('dividendAmount')?.value ?? 0);
+    return this.isDividendSelected && this.form.get('dividendKind')?.value === 'Cash' && amount <= 0;
+  }
+
+  get freeSharesInvalid(): boolean {
+    const qty = Number(this.form.get('freeSharesQuantity')?.value ?? 0);
+    const price = Number(this.form.get('freeSharesMarketPrice')?.value ?? 0);
+    return this.isDividendSelected && this.form.get('dividendKind')?.value === 'Stock' && (qty <= 0 || price <= 0);
+  }
+
   get quantityLabel(): string {
     if (this.isDailyAccrualFundSelected) return 'المبلغ';
-    return this.isGoldSelected ? 'عدد الجرامات' : 'الكمية';
+    return this.isGoldSelected ? 'عدد الجرامات' : 'الوحدات';
   }
 
   get priceLabel(): string {
@@ -288,13 +334,18 @@ export class TransactionDialogComponent {
       return null;
     }
 
+    if (this.form.get('transactionType')?.value === 'Dividend') {
+      return 'الأرباح متاحة فقط بعد وجود عملية شراء سابقة لهذا السهم.';
+    }
+
     return this.isDailyAccrualFundSelected
       ? 'السحب متاح فقط بعد وجود إيداع سابق لهذا الأصل.'
       : 'البيع متاح فقط بعد وجود عملية شراء سابقة لهذا الأصل.';
   }
 
   get sellBlocked(): boolean {
-    return this.form.get('transactionType')?.value === 'Sell' && !this.sellAllowed;
+    const type = this.form.get('transactionType')?.value;
+    return (type === 'Sell' || type === 'Dividend') && !this.sellAllowed;
   }
 
   get sellExceedsAvailable(): boolean {
@@ -319,13 +370,19 @@ export class TransactionDialogComponent {
   }
 
   get transactionNetAmount(): number {
+    const type = this.form.get('transactionType')?.value;
+    if (type === 'Dividend') {
+      if (this.form.get('dividendKind')?.value === 'Stock') return 0;
+      return Number(this.form.get('dividendAmount')?.value ?? 0);
+    }
+
     const quantity = Number(this.form.get('quantity')?.value ?? 0);
     const price = this.isDailyAccrualFundSelected ? 1 : Number(this.form.get('pricePerUnit')?.value ?? 0);
     const fees = this.isDailyAccrualFundSelected ? 0 : Number(this.form.get('fees')?.value ?? 0);
     const goldAdjustment = this.isGoldSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
     const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + goldAdjustment;
 
-    return this.form.get('transactionType')?.value === 'Buy'
+    return type === 'Buy'
       ? gross + fees
       : gross - fees;
   }
@@ -338,7 +395,10 @@ export class TransactionDialogComponent {
   }
 
   get submitLabel(): string {
-    const isBuy = this.form.get('transactionType')?.value === 'Buy';
+    const type = this.form.get('transactionType')?.value;
+    if (type === 'Dividend') return 'حفظ';
+
+    const isBuy = type === 'Buy';
     if (this.isDailyAccrualFundSelected) {
       return isBuy ? 'إيداع' : 'سحب';
     }
@@ -431,8 +491,11 @@ export class TransactionDialogComponent {
   }
 
   private ensureTransactionTypeAllowed(): void {
-    if (!this.sellAllowed && this.form.get('transactionType')?.value === 'Sell') {
-      this.form.get('transactionType')?.setValue('Buy', { emitEvent: false });
+    if (!this.sellAllowed) {
+      const type = this.form.get('transactionType')?.value;
+      if (type === 'Sell' || type === 'Dividend') {
+        this.form.get('transactionType')?.setValue('Buy', { emitEvent: false });
+      }
     }
   }
 

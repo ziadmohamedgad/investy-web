@@ -116,6 +116,7 @@ export interface CreateTransactionDraft {
   pricePerUnit: number;
   fees: number;
   manufacturingFeePerGram: number;
+  dividendKind?: string;
   notes?: string;
 }
 
@@ -134,6 +135,7 @@ export interface Transaction {
   fees: number;
   manufacturingFeePerGram: number;
   netAmount: number;
+  dividendKind?: string;
   notes?: string;
   createdAt: Date;
 }
@@ -146,6 +148,7 @@ export interface CreateTransaction {
   pricePerUnit: number;
   fees: number;
   manufacturingFeePerGram: number;
+  dividendKind?: string;
   notes?: string;
 }
 

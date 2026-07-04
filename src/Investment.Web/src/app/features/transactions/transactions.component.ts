@@ -423,6 +423,10 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
       return transaction.transactionType === 'Buy' ? 'إيداع' : transaction.transactionType === 'Sell' ? 'سحب' : transaction.transactionType;
     }
 
+    if (transaction.transactionType === 'Dividend') {
+      return transaction.dividendKind === 'Stock' ? 'أرباح (أسهم)' : 'أرباح (نقدي)';
+    }
+
     return transaction.transactionType === 'Buy' ? 'شراء' : transaction.transactionType === 'Sell' ? 'بيع' : transaction.transactionType;
   }
   getAssetCodeClass(assetType: string): string {
