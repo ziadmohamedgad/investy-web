@@ -83,16 +83,18 @@
       </mat-form-field>
     </div>
 
-    <mat-form-field *ngIf="isMetalSelected" appearance="outline" class="field">
-      <mat-label>{{ goldAdjustmentLabel }}</mat-label>
-      <input matInput type="number" formControlName="manufacturingFeePerGram" step="0.00001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
-    </mat-form-field>
+    <div [class.row]="isMetalSelected">
+      <mat-form-field *ngIf="isMetalSelected" appearance="outline" class="field">
+        <mat-label>{{ goldAdjustmentLabel }}</mat-label>
+        <input matInput type="number" formControlName="manufacturingFeePerGram" step="0.00001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      </mat-form-field>
 
-    <mat-form-field *ngIf="!isDailyAccrualFundSelected" appearance="outline" class="field">
-      <mat-label>الرسوم</mat-label>
-      <input matInput type="number" formControlName="fees" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
-      <mat-error *ngIf="form.get('fees')?.hasError('min')">الرسوم لا يمكن أن تكون سالبة</mat-error>
-    </mat-form-field>
+      <mat-form-field *ngIf="!isDailyAccrualFundSelected" appearance="outline" class="field">
+        <mat-label>الرسوم</mat-label>
+        <input matInput type="number" formControlName="fees" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <mat-error *ngIf="form.get('fees')?.hasError('min')">الرسوم لا يمكن أن تكون سالبة</mat-error>
+      </mat-form-field>
+    </div>
 
     <div class="transaction-total" [class.is-danger]="sellExceedsAvailable || sellNetInvalid || sellExceedsMarketValue">
       <span>الإجمالي</span>
