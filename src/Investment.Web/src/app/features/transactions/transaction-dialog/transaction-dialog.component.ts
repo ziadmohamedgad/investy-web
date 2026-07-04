@@ -141,12 +141,8 @@ export class TransactionDialogComponent {
     return this.data.mode === 'edit';
   }
 
-  get transactionTypeOptions(): { value: string; label: string; disabled?: boolean }[] {
-    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
-    return source.map((option) => ({
-      ...option,
-      disabled: option.value === 'Sell' && !this.sellAllowed
-    }));
+  get currentTransactionTypes(): { value: string; label: string }[] {
+    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
   }
 
   @HostListener('document:keydown', ['$event'])
