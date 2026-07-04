@@ -42,8 +42,11 @@
       <th mat-header-cell *matHeaderCellDef> الأصل </th>
       <td mat-cell *matCellDef="let element">
         <strong class="code" [ngClass]="getAssetCodeClass(element.assetType, element.isDailyAccrualFund)">{{element.assetCode}}</strong>
-        <br>
-        <small class="text-muted">{{element.assetName}}</small>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px;">
+          <small class="text-muted">{{getAssetTypeName(element.assetType, element.isDailyAccrualFund)}}</small>
+          <small class="text-muted">-</small>
+          <small class="text-muted">{{element.assetName}}</small>
+        </div>
       </td>
     </ng-container>
 

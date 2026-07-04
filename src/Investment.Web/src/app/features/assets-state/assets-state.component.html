@@ -13,11 +13,21 @@
   <div *ngIf="loading" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
   </div>
+  <div *ngIf="!loading && summaries.length === 0" class="empty">لا توجد أصول.</div>
+
+  <div *ngIf="!loading && summaries.length > 0" class="glass-panel table-container">
+    <div class="table-scroll">
+    <table mat-table [dataSource]="dataSource" matSort class="assets-table">
 
       <ng-container matColumnDef="assetCode">
         <th mat-header-cell *matHeaderCellDef>الأصل</th>
-        <td mat-cell *matCellDef="let s">
+      <td mat-cell *matCellDef="let s">
           <strong class="code" [ngClass]="getAssetCodeClass(s.assetType, s.isDailyAccrualFund)">{{s.assetCode}}</strong>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px;">
+            <small class="text-muted">{{getAssetTypeName(s.assetType, s.isDailyAccrualFund)}}</small>
+            <small class="text-muted">-</small>
+            <small class="text-muted">{{s.assetName}}</small>
+          </div>
         </td>
       </ng-container>
 

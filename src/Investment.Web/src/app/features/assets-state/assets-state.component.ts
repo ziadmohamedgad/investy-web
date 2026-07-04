@@ -104,6 +104,21 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
     return map[assetType] || 'type-other';
   }
 
+  getAssetTypeName(assetType: string, isDailyAccrualFund?: boolean): string {
+    if (isDailyAccrualFund) {
+      return 'صندوق تراكمي';
+    }
+    const map: Record<string, string> = {
+      'Stock': 'سهم',
+      'ETF': 'وثيقة',
+      'Crypto': 'كريبتو',
+      'Gold': 'ذهب',
+      'Silver': 'فضة',
+      'Fund': 'صندوق'
+    };
+    return map[assetType] || 'أخرى';
+  }
+
   get isPreviousDisabled(): boolean {
     return !this.paginator || !this.paginator.hasPreviousPage();
   }
