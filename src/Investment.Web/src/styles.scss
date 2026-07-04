@@ -499,3 +499,26 @@ html[dir='rtl'] .header-actions > button {
   background: color-mix(in srgb, var(--primary) 16%, transparent) !important;
   transform: translateY(-1px);
 }
+
+/* Asset Type and Transaction Type Pill Styles */
+.code {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+}
+
+.type-stock { border-color: #60a5fa; color: #60a5fa; background: rgba(96, 165, 250, .1); }
+.type-etf { border-color: #a78bfa; color: #a78bfa; background: rgba(167, 139, 250, .1); }
+.type-crypto { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, .1); }
+.type-metal { border-color: #fcd34d; color: #d97706; background: rgba(252, 211, 77, .15); }
+.type-fund { border-color: #34d399; color: #34d399; background: rgba(52, 211, 153, .1); }
+.type-other { border-color: #94a3b8; color: #94a3b8; background: rgba(148, 163, 184, .1); }
+
+.type-buy { color: var(--accent); }
+.type-sell { color: var(--danger); }
+.type-dividend { color: var(--primary); }
