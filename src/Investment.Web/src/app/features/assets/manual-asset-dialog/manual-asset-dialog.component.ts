@@ -83,7 +83,8 @@ export class ManualAssetDialogComponent implements OnInit {
       quantity: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
       pricePerUnit: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
       manufacturingFeePerGram: [null as unknown as number, [Validators.min(0)]],
-      fees: [null as unknown as number, [Validators.min(0)]]
+      fees: [null as unknown as number, [Validators.min(0)]],
+      dailyAccrualAnnualRatePercent: [null as unknown as number, [Validators.min(0)]]
     });
   }
 
@@ -159,12 +160,17 @@ export class ManualAssetDialogComponent implements OnInit {
     if (enabled) {
       priceControl.clearValidators();
       priceControl.setValue(null, { emitEvent: false });
+      this.form.get('dailyAccrualAnnualRatePercent')?.setValidators([Validators.required, Validators.min(0)]);
     } else {
       priceControl.setValidators([Validators.required, Validators.min(0.00000001)]);
       if (!priceControl.value || Number(priceControl.value) <= 0) {
         priceControl.setValue(null, { emitEvent: false });
       }
+      this.form.get('dailyAccrualAnnualRatePercent')?.clearValidators();
+      this.form.get('dailyAccrualAnnualRatePercent')?.setValue(null, { emitEvent: false });
     }
+    
+    this.form.get('dailyAccrualAnnualRatePercent')?.updateValueAndValidity({ emitEvent: false });
 
     priceControl.updateValueAndValidity({ emitEvent: false });
   }
@@ -316,6 +322,8 @@ export class ManualAssetDialogComponent implements OnInit {
     const manufacturingFeePerGram = Number(value.manufacturingFeePerGram ?? 0);
     const isDailyAccrualFund = value.assetType === 'DailyAccrualFund';
 
+
+
     const finalAssetType = isDailyAccrualFund ? 'Fund' : value.assetType!;
 
     this.dialogRef.close({
@@ -330,7 +338,8 @@ export class ManualAssetDialogComponent implements OnInit {
       quantity,
       pricePerUnit: isDailyAccrualFund ? 1 : Number(value.pricePerUnit),
       fees: baseFees,
-      manufacturingFeePerGram
+      manufacturingFeePerGram,
+      dailyAccrualAnnualRatePercent: isDailyAccrualFund ? Number(value.dailyAccrualAnnualRatePercent ?? 0) : 0
     });
   }
 

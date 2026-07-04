@@ -102,6 +102,7 @@ export interface CreateManualAssetDraft {
   fees: number;
   manufacturingFeePerGram: number;
   dividendKind?: string;
+  dailyAccrualAnnualRatePercent?: number;
 }
 
 export interface SetAssetCurrentPrice {

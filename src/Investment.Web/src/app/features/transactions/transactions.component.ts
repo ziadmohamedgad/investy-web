@@ -202,7 +202,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
         notes: result.notes,
         initialPrice: result.pricePerUnit,
         isDailyAccrualFund: result.isDailyAccrualFund,
-        dailyAccrualAnnualRatePercent: result.isDailyAccrualFund ? 16 : 0
+        dailyAccrualAnnualRatePercent: result.isDailyAccrualFund ? (result.dailyAccrualAnnualRatePercent ?? 0) : 0
       }).pipe(
         switchMap((asset) =>
           this.transactionService.create({
