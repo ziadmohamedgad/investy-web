@@ -217,6 +217,11 @@ tr.mat-mdc-row:hover {
   transition: all 0.2s ease;
 }
 
+.asset-actions .action-button[disabled] {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
 .asset-actions .action-button .mat-icon {
   font-size: 20px;
   width: 20px;
