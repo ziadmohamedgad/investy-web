@@ -62,8 +62,7 @@ import { PriceProvidersService } from '../../core/services/price-providers.servi
           (click)="save()">
           <mat-icon *ngIf="!saving">check</mat-icon>
           <span>حفظ المفتاح</span>
-        </button>
-        <button mat-button class="dialog-action cancel-action" type="button" [disabled]="saving" (click)="cancel()">إلغاء</button>
+        <button *ngIf="!dialogRef.disableClose" mat-button class="dialog-action cancel-action" type="button" [disabled]="saving" (click)="cancel()">إلغاء</button>
       </div>
     </section>
   `,
@@ -292,7 +291,7 @@ export class EodhdApiKeyDialogComponent {
   errorMessage: string | null = null;
 
   constructor(
-    private dialogRef: MatDialogRef<EodhdApiKeyDialogComponent, PriceProviderStatus | false>,
+    public dialogRef: MatDialogRef<EodhdApiKeyDialogComponent, PriceProviderStatus | false>,
     private priceProviders: PriceProvidersService
   ) {}
 
