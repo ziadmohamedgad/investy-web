@@ -266,8 +266,8 @@ export class ManualAssetDialogComponent implements OnInit {
     const quantity = Number(this.form.get('quantity')?.value ?? 0);
     const price = this.isDailyAccrualFundSelected ? 1 : Number(this.form.get('pricePerUnit')?.value ?? 0);
     const fees = this.isDailyAccrualFundSelected ? 0 : Number(this.form.get('fees')?.value ?? 0);
-    const goldAdjustment = this.isGoldSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
-    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + goldAdjustment;
+    const metalAdjustment = this.isMetalSelected ? quantity * Number(this.form.get('manufacturingFeePerGram')?.value ?? 0) : 0;
+    const gross = this.isDailyAccrualFundSelected ? quantity : quantity * price + metalAdjustment;
 
     return this.form.get('transactionType')?.value === 'Buy'
       ? gross + fees
