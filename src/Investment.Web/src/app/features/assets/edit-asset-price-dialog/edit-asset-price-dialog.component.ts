@@ -41,7 +41,7 @@ export class EditAssetPriceDialogComponent {
   ) {
     this.hideBalances$ = this.balanceVisibilityService.hidden$;
     this.form = this.fb.group({
-      price: [data.asset.currentPrice >= 0 ? data.asset.currentPrice : null],
+      price: [null],
       goldCashbackPerGram: [data.asset.goldCashbackPerGram ?? 28.5, [Validators.min(0)]],
       dailyAccrualAnnualRatePercent: [data.asset.dailyAccrualAnnualRatePercent || 16, [Validators.min(0.00000001)]]
     });
@@ -52,8 +52,8 @@ export class EditAssetPriceDialogComponent {
     this.form.get('price')?.updateValueAndValidity({ emitEvent: false });
   }
 
-  get isGold(): boolean {
-    return this.data.asset.assetType === 'Gold';
+  get isGoldOrSilver(): boolean {
+    return this.data.asset.assetType === 'Gold' || this.data.asset.assetType === 'Silver';
   }
 
   get isDailyAccrualFund(): boolean {
@@ -87,7 +87,7 @@ export class EditAssetPriceDialogComponent {
     const value = this.form.getRawValue();
     this.dialogRef.close({
       price: this.showPriceInput ? Number(value.price) : undefined,
-      goldCashbackPerGram: this.isGold ? Number(value.goldCashbackPerGram ?? 28.5) : undefined,
+      goldCashbackPerGram: this.isGoldOrSilver ? Number(value.goldCashbackPerGram ?? 28.5) : undefined,
       dailyAccrualAnnualRatePercent: this.isDailyAccrualFund ? Number(value.dailyAccrualAnnualRatePercent ?? 16) : undefined
     });
   }
