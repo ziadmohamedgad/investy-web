@@ -83,42 +83,9 @@
   }
 }
 
-.type-buy { color: #16a34a; font-weight: 700; }
-.type-sell { color: #dc2626; font-weight: 700; }
 
-:host-context(.dark-theme) .type-buy { color: #22c55e; }
-:host-context(.dark-theme) .type-sell { color: #f87171; }
 
-.asset-code {
-  display: inline-block;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  line-height: 1.15;
-}
 
-.asset-code-stock {
-  color: var(--text-primary);
-}
-
-.asset-code-gold {
-  color: var(--warning);
-}
-
-.asset-code-non-stock {
-  color: #2563eb;
-}
-
-:host-context(.dark-theme) .asset-code-stock {
-  color: var(--text-primary);
-}
-
-:host-context(.dark-theme) .asset-code-gold {
-  color: #fbbf24;
-}
-
-:host-context(.dark-theme) .asset-code-non-stock {
-  color: #60a5fa;
-}
 
 .page-meta {
   padding: 0.7rem 1rem;

@@ -432,12 +432,15 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
     return transaction.transactionType === 'Buy' ? 'شراء' : transaction.transactionType === 'Sell' ? 'بيع' : transaction.transactionType;
   }
   getAssetCodeClass(assetType: string): string {
-    if (assetType === 'Gold') {
-      return 'asset-code asset-code-gold';
-    }
-
-    return assetType === 'Stock'
-      ? 'asset-code asset-code-stock'
-      : 'asset-code asset-code-non-stock';
+    const map: Record<string, string> = {
+      'Stock': 'type-stock',
+      'ETF': 'type-etf',
+      'Crypto': 'type-crypto',
+      'Gold': 'type-metal',
+      'Silver': 'type-metal',
+      'Fund': 'type-fund',
+      'DailyAccrualFund': 'type-fund'
+    };
+    return map[assetType] || 'type-other';
   }
 }

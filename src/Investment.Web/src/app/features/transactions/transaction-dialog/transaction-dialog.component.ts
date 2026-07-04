@@ -198,7 +198,7 @@ export class TransactionDialogComponent {
     }
 
     const quantity = isDividend 
-      ? (isStockDividend ? stockDividendQuantity : 0)
+      ? (isStockDividend ? stockDividendQuantity : Number(value.dividendAmount ?? 0))
       : Number(value.quantity);
       
     const price = isDividend

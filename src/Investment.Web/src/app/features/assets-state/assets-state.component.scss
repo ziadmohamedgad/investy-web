@@ -91,45 +91,6 @@ td {
   color: var(--text-primary);
 }
 
-.asset-code {
-  display: inline-block;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  line-height: 1.15;
-}
-
-.asset-code-stock {
-  color: var(--text-primary);
-}
-
-.asset-code-gold {
-  color: var(--warning);
-}
-
-.asset-code-fund {
-  color: #2563eb;
-}
-
-.asset-code-other {
-  color: #0f766e;
-}
-
-:host-context(.dark-theme) .asset-code-stock {
-  color: var(--text-primary);
-}
-
-:host-context(.dark-theme) .asset-code-gold {
-  color: #fbbf24;
-}
-
-:host-context(.dark-theme) .asset-code-fund {
-  color: #60a5fa;
-}
-
-:host-context(.dark-theme) .asset-code-other {
-  color: #38bdf8;
-}
-
 tr.mat-mdc-header-row {
   background: rgba(37, 99, 235, 0.04);
 }
@@ -249,60 +210,63 @@ tr.mat-mdc-row:hover {
   width: 34px;
   height: 34px;
   padding: 0;
-  border-radius: 999px;
+  display: grid;
+  place-items: center;
   color: var(--text-muted);
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
 .asset-actions .action-button .mat-icon {
-  width: 19px;
-  height: 19px;
-  font-size: 19px;
-  line-height: 19px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
 }
 
-.asset-actions .edit-action:hover {
-  background: rgba(37, 99, 235, 0.11);
-  color: #2563eb;
+.asset-actions .action-button:hover {
+  background: var(--surface-color);
 }
 
 .asset-actions .sync-action:hover {
-  background: rgba(15, 118, 110, 0.12);
-  color: #0f766e;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.asset-actions .edit-action:hover {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
 }
 
 .asset-actions .delete-action:hover {
-  background: rgba(220, 38, 38, 0.11);
   color: #dc2626;
-}
-
-.asset-actions .action-button:disabled {
-  opacity: 0.55;
+  background: rgba(220, 38, 38, 0.1);
 }
 
 @media (max-width: 768px) {
-  .header-actions,
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-actions > div:first-child {
+    align-items: stretch;
+    text-align: right;
+  }
+  
+  .header-actions > .page-meta {
+    position: static;
+    transform: none;
+    width: fit-content;
+    align-self: center;
+  }
+
   .table-footer {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .page-meta {
-    position: static;
-    transform: none;
-    width: fit-content;
-  }
-
-  .pager-actions {
-    width: 100%;
-    flex-direction: column;
-    direction: rtl;
-  }
-
   .pager-actions button {
     flex: 1;
-  }
-
-  .table-hint {
-    min-width: unset;
   }
 }
