@@ -85,7 +85,6 @@ export class TransactionDialogComponent {
       dividendKind: ['Cash'],
       dividendAmount: [null as unknown as number, [Validators.min(0)]],
       freeSharesQuantity: [null as unknown as number, [Validators.min(0)]],
-      freeSharesMarketPrice: [null as unknown as number, [Validators.min(0)]],
       notes: ['']
     });
 
@@ -107,8 +106,7 @@ export class TransactionDialogComponent {
         fees: this.data.transaction.fees ?? 0,
         dividendKind: this.data.transaction.dividendKind ?? 'Cash',
         dividendAmount: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Cash' ? this.data.transaction.netAmount : undefined,
-        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity : undefined,
-        freeSharesMarketPrice: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.pricePerUnit : undefined,
+        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity / Math.max(1, (this.data.assetSummaries?.find(a => a.assetId === this.data.transaction!.assetId)?.totalUnitsHeld ?? 1) - this.data.transaction.quantity) : undefined,
         notes: this.data.transaction.notes ?? ''
       });
       this.form.get('assetQuery')!.disable({ emitEvent: false });
@@ -184,12 +182,23 @@ export class TransactionDialogComponent {
     const isStockDividend = isDividend && value.dividendKind === 'Stock';
     const isCashDividend = isDividend && value.dividendKind === 'Cash';
 
+    let stockDividendQuantity = 0;
+    if (isStockDividend) {
+      const ratio = Number(value.freeSharesQuantity);
+      const summary = this.data.assetSummaries?.find((item) => item.assetCode === this.selectedAsset?.assetCode);
+      let baseUnits = summary?.totalUnitsHeld ?? 0;
+      if (this.isEditMode && this.data.transaction?.transactionType === 'Dividend' && this.data.transaction?.dividendKind === 'Stock') {
+        baseUnits -= this.data.transaction.quantity;
+      }
+      stockDividendQuantity = ratio * baseUnits;
+    }
+
     const quantity = isDividend 
-      ? (isStockDividend ? Number(value.freeSharesQuantity) : 0)
+      ? (isStockDividend ? stockDividendQuantity : 0)
       : Number(value.quantity);
       
     const price = isDividend
-      ? (isStockDividend ? Number(value.freeSharesMarketPrice) : 0)
+      ? 0
       : (this.selectedAsset?.isDailyAccrualFund ? 1 : Number(value.pricePerUnit));
 
     this.dialogRef.close({
@@ -244,7 +253,6 @@ export class TransactionDialogComponent {
       dividendKind: string;
       dividendAmount: number;
       freeSharesQuantity: number;
-      freeSharesMarketPrice: number;
       notes: string;
     }>
   ): void {
@@ -305,8 +313,7 @@ export class TransactionDialogComponent {
 
   get freeSharesInvalid(): boolean {
     const qty = Number(this.form.get('freeSharesQuantity')?.value ?? 0);
-    const price = Number(this.form.get('freeSharesMarketPrice')?.value ?? 0);
-    return this.isDividendSelected && this.form.get('dividendKind')?.value === 'Stock' && (qty <= 0 || price <= 0);
+    return this.isDividendSelected && this.form.get('dividendKind')?.value === 'Stock' && qty <= 0;
   }
 
   get quantityLabel(): string {
