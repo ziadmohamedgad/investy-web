@@ -52,7 +52,7 @@ import { PriceProvidersService } from '../../core/services/price-providers.servi
       </div>
       <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
 
-      <div class="actions">
+      <div class="actions" [class.single-action]="dialogRef.disableClose">
         <button
           mat-button
           class="dialog-action save-action"
@@ -201,6 +201,10 @@ import { PriceProvidersService } from '../../core/services/price-providers.servi
       grid-template-columns: 1.05fr 0.95fr;
       gap: 10px;
       width: 100%;
+    }
+
+    .actions.single-action {
+      grid-template-columns: 1fr;
     }
 
     .dialog-action {

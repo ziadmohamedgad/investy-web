@@ -66,7 +66,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.priceFetch.runFetch().subscribe({
       next: () => {
         this.syncingPrices = false;
-        this.message = 'تم إرسال طلب المزامنة بنجاح.';
+        this.message = 'تم تحديث الأسعار بنجاح.';
         setTimeout(() => this.message = '', 3000);
       },
       error: () => {
