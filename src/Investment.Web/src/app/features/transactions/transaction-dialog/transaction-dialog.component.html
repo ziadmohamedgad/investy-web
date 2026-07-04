@@ -57,13 +57,11 @@
         <mat-error *ngIf="dividendInvalid">المبلغ يجب أن يكون أكبر من الصفر</mat-error>
       </mat-form-field>
 
-      <div class="row" *ngIf="form.get('dividendKind')?.value === 'Stock'">
-        <mat-form-field appearance="outline" class="field">
-          <mat-label>عدد الأسهم المجانية لكل سهم ممتلك</mat-label>
-          <input matInput type="number" formControlName="freeSharesQuantity" step="0.0001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
-          <mat-error *ngIf="form.get('freeSharesQuantity')?.hasError('required')">العدد مطلوب</mat-error>
-        </mat-form-field>
-      </div>
+      <mat-form-field *ngIf="form.get('dividendKind')?.value === 'Stock'" appearance="outline" class="field">
+        <mat-label>عدد الأسهم المجانية لكل سهم ممتلك</mat-label>
+        <input matInput type="number" formControlName="freeSharesQuantity" step="0.0001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <mat-error *ngIf="form.get('freeSharesQuantity')?.hasError('required')">العدد مطلوب</mat-error>
+      </mat-form-field>
     </div>
 
     <mat-form-field *ngIf="isMetalSelected && !isDividendSelected" appearance="outline" class="field">
