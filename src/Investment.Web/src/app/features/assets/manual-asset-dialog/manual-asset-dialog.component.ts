@@ -223,7 +223,7 @@ export class ManualAssetDialogComponent implements OnInit {
 
   get quantityLabel(): string {
     if (this.isDailyAccrualFundSelected) return 'المبلغ';
-    return this.isMetalSelected ? 'عدد الجرامات' : 'الكمية';
+    return this.isMetalSelected ? 'عدد الجرامات' : 'الوحدات';
   }
 
   get priceLabel(): string {

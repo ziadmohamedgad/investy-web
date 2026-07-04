@@ -66,7 +66,7 @@
         <mat-hint *ngIf="form.get('transactionType')?.value === 'Sell' && sellAllowed">المتاح: {{ availableSellLabel }}</mat-hint>
         <mat-error *ngIf="sellExceedsAvailable">القيمة تتخطى المتاح لهذا الأصل</mat-error>
         <mat-error *ngIf="form.get('quantity')?.hasError('required')">
-          {{ isDailyAccrualFundSelected ? 'المبلغ مطلوب' : 'الكمية مطلوبة' }}
+          {{ isDailyAccrualFundSelected ? 'المبلغ مطلوب' : 'الوحدات مطلوبة' }}
         </mat-error>
       </mat-form-field>
 
