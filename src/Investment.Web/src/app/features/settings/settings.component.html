@@ -1,64 +1,148 @@
-<div class="settings-page page-shell" dir="rtl">
-  <div class="header-actions">
+<div class="settings-page" dir="rtl">
+  <div class="dashboard-header">
     <div>
       <h1 class="text-gradient">الإعدادات</h1>
-      <p class="text-muted">مفتاح EODHD وبيانات المحفظة</p>
+      <p class="text-muted">إدارة الحساب ومزامنة البيانات ومفتاح EODHD</p>
     </div>
   </div>
 
-  <div class="notice glass-panel message-box" *ngIf="message">
-    {{ message }}
+  <div class="notice-card" *ngIf="message" [class.success]="!message.includes('خطأ') && !message.includes('غير صالح')">
+    <mat-icon>{{ message.includes('خطأ') || message.includes('غير صالح') ? 'error_outline' : 'check_circle' }}</mat-icon>
+    <span>{{ message }}</span>
   </div>
 
-  <section class="settings-section glass-panel">
-    <div class="section-title flex-between">
-      <h2>الأسعار والبيانات</h2>
-    </div>
-    <div class="head-actions inline-actions" style="margin-top:12px; justify-content: flex-end; align-items: center; gap: 24px;">
-      <button mat-button class="ghost export-button" (click)="exportWorkbook()" [disabled]="syncingPrices">تصدير ملف</button>
-      <button mat-raised-button color="primary" class="primary sync-btn" (click)="syncPrices()" [disabled]="syncingPrices || !status?.hasApiKey">
-        <mat-icon *ngIf="!syncingPrices">sync</mat-icon>
-        <mat-icon *ngIf="syncingPrices">hourglass_top</mat-icon>
-        <span>مزامنة الأسعار</span>
-      </button>
-    </div>
-  </section>
+  <div class="settings-grid">
+    <!-- Right Column: Account Status -->
+    <div class="main-column">
+      <div class="premium-glass-card status-card">
+        <div class="card-head">
+          <div class="head-title">
+            <div class="icon-box"><mat-icon>verified_user</mat-icon></div>
+            <h2>معلومات الاشتراك</h2>
+          </div>
+          <button mat-icon-button class="refresh-btn" (click)="loadStatus()" [class.is-loading]="loadingStatus" aria-label="تحديث">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
 
-  <section class="settings-section glass-panel">
-    <div class="section-title flex-between">
-      <h2>حالة المفتاح</h2>
-      <button mat-button class="ghost" (click)="loadStatus()">تحديث</button>
+        <div *ngIf="loadingStatus" class="state-container">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p>جاري تحميل البيانات...</p>
+        </div>
+        
+        <div *ngIf="!loadingStatus && !status" class="state-container">
+          <mat-icon class="huge-icon">vpn_key_off</mat-icon>
+          <p>لا يوجد مفتاح صالح مسجل حالياً.</p>
+        </div>
+
+        <div *ngIf="!loadingStatus && status" class="stats-grid">
+          <!-- Full width for name -->
+          <div class="stat-item full-width">
+            <div class="stat-icon"><mat-icon>account_circle</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-label">صاحب الحساب</span>
+              <span class="stat-value">{{ status.name }}</span>
+              <span class="stat-subtext">{{ status.email }}</span>
+            </div>
+          </div>
+
+          <!-- Half width stats -->
+          <div class="stat-item">
+            <div class="stat-icon plan-icon"><mat-icon>stars</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-label">نوع الخطة</span>
+              <span class="stat-value badge">{{ status.subscriptionType }}</span>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-icon warning-icon"><mat-icon>bolt</mat-icon></div>
+            <div class="stat-info">
+              <span class="stat-label">الرصيد المتبقي</span>
+              <span class="stat-value giant-text">{{ status.remaining }}</span>
+            </div>
+          </div>
+
+          <!-- Full width for usage -->
+          <div class="stat-item full-width usage-item">
+            <div class="usage-header">
+              <span class="stat-label"><mat-icon>data_usage</mat-icon> الاستهلاك اليومي</span>
+              <span class="usage-numbers"><b>{{ status.apiRequestsUsedToday }}</b> / {{ status.totalAvailable }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="(status.apiRequestsUsedToday / status.totalAvailable) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div *ngIf="loadingStatus" class="loading-state">
-      <p>جاري تحميل بيانات المفتاح...</p>
-    </div>
-    
-    <div *ngIf="!loadingStatus && !status" class="empty-state">
-      <p>لم يتم تحميل بيانات المفتاح.</p>
-    </div>
-    
-    <div *ngIf="!loadingStatus && status" class="settings-list">
-      <div class="status-card"><span class="label">الاسم</span> <b class="value">{{ status.name }}</b></div>
-      <div class="status-card"><span class="label">البريد</span> <b class="value">{{ status.email }}</b></div>
-      <div class="status-card"><span class="label">الخطة</span> <b class="value">{{ status.subscriptionType }}</b></div>
-      <div class="status-card"><span class="label">المتبقي</span> <b class="value">{{ status.remaining }}</b></div>
-      <div class="status-card"><span class="label">المستخدم اليوم</span> <b class="value">{{ status.apiRequestsUsedToday }}</b></div>
-      <div class="status-card"><span class="label">الإجمالي</span> <b class="value">{{ status.totalAvailable }}</b></div>
-    </div>
-  </section>
+    <!-- Left Column: Actions & Key Management -->
+    <div class="side-column">
+      
+      <!-- Actions Card -->
+      <div class="premium-glass-card actions-card">
+        <div class="card-head">
+          <div class="head-title">
+            <div class="icon-box"><mat-icon>dataset</mat-icon></div>
+            <h2>العمليات والبيانات</h2>
+          </div>
+        </div>
+        
+        <div class="actions-list">
+          <button class="action-row-btn" (click)="syncPrices()" [disabled]="syncingPrices || !status?.hasApiKey">
+            <div class="action-icon sync-icon" [class.spinning]="syncingPrices">
+              <mat-icon>{{ syncingPrices ? 'hourglass_top' : 'sync' }}</mat-icon>
+            </div>
+            <div class="action-text">
+              <span class="action-title">مزامنة الأسعار</span>
+              <span class="action-desc">تحديث فوري لأسعار السوق</span>
+            </div>
+            <mat-icon class="action-chevron">chevron_left</mat-icon>
+          </button>
+          
+          <button class="action-row-btn" (click)="exportWorkbook()" [disabled]="syncingPrices">
+            <div class="action-icon export-icon">
+              <mat-icon>download</mat-icon>
+            </div>
+            <div class="action-text">
+              <span class="action-title">تصدير المحفظة</span>
+              <span class="action-desc">تحميل تقرير Excel شامل</span>
+            </div>
+            <mat-icon class="action-chevron">chevron_left</mat-icon>
+          </button>
+        </div>
+      </div>
 
-  <section class="settings-section glass-panel">
-    <div class="section-title">
-      <h2>تغيير المفتاح</h2>
+      <!-- Key Management Card -->
+      <div class="premium-glass-card key-card">
+        <div class="card-head">
+          <div class="head-title">
+            <div class="icon-box danger-box"><mat-icon>vpn_key</mat-icon></div>
+            <h2>إعدادات المفتاح</h2>
+          </div>
+        </div>
+        
+        <div class="key-management-content">
+          <div class="input-wrapper">
+            <mat-icon class="leading-icon">key</mat-icon>
+            <input type="text" [(ngModel)]="newApiKey" placeholder="أدخل مفتاح EODHD..." spellcheck="false" autocomplete="off" />
+            <button class="save-input-btn" (click)="saveKey()" [disabled]="saving || !newApiKey">
+              <mat-icon *ngIf="!saving">check</mat-icon>
+              <mat-spinner *ngIf="saving" diameter="20"></mat-spinner>
+            </button>
+          </div>
+          
+          <div class="danger-area">
+            <button class="delete-key-btn" (click)="clearKey()" [disabled]="saving">
+              <mat-icon>delete_outline</mat-icon>
+              مسح المفتاح نهائياً
+            </button>
+            <p class="danger-hint">سيتم إعادة تشغيل التطبيق وقفل جميع الصفحات.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <div class="mobile-form form-group">
-      <label class="field-label">مفتاح EODHD جديد</label>
-      <input class="field form-control" [(ngModel)]="newApiKey" placeholder="أدخل المفتاح هنا..." />
-    </div>
-    <div class="form-actions">
-      <button mat-button class="ghost danger" (click)="clearKey()" [disabled]="saving">مسح المفتاح</button>
-      <button mat-raised-button color="primary" class="primary" (click)="saveKey()" [disabled]="saving || !newApiKey">حفظ</button>
-    </div>
-  </section>
+  </div>
 </div>

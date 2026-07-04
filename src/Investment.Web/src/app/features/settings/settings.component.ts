@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PriceProvidersService } from '../../core/services/price-providers.service';
 import { PriceFetchService } from '../../core/services/price-fetch.service';
 import { ExportService } from '../../core/services/export.service';
@@ -12,7 +13,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
@@ -67,6 +68,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: () => {
         this.syncingPrices = false;
         this.message = 'تم تحديث الأسعار بنجاح.';
+        this.loadStatus(); // تحديث بيانات المفتاح بعد המزامنة
         setTimeout(() => this.message = '', 3000);
       },
       error: () => {
