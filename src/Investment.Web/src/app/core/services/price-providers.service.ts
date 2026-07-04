@@ -23,4 +23,8 @@ export class PriceProvidersService {
   saveEodhdApiKey(apiKey: string): Observable<PriceProviderStatus> {
     return this.http.post<PriceProviderStatus>(`${this.apiUrl}/eodhd/configuration`, { apiKey });
   }
+
+  clearEodhdApiKey(): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/eodhd/configuration`);
+  }
 }

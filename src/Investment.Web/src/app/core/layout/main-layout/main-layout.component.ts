@@ -24,11 +24,6 @@ const themeStorageKey = 'investment-web-theme';
   styleUrl: './main-layout.component.scss'
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
-  priceSyncStatus: PriceFetchStatus | null = null;
-  providerStatus: PriceProviderStatus | null = null;
-  providerLoading = true;
-  syncingPrices = false;
-  syncError: string | null = null;
   readonly isProduction = environment.production;
   private refreshSub?: Subscription;
   isDarkMode = false;
@@ -61,15 +56,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadPriceStatus();
-    this.loadProviderStatus();
     this.checkEodhdSetup();
 
     this.refreshSub = this.refreshService.onRefresh('any').subscribe((key) => {
-      this.loadPriceStatus();
-      if (key === 'prices:changed') {
-        this.loadProviderStatus();
-      }
+      // Keep refresh sub for future use
     });
   }
 
@@ -77,27 +67,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     this.refreshSub?.unsubscribe();
   }
 
-  syncPrices(): void {
-    if (this.syncingPrices || this.isSyncDisabled) {
-      return;
-    }
 
-    this.syncingPrices = true;
-    this.syncError = null;
-
-    this.priceFetchService.runFetch().pipe(
-      timeout(30000),
-      catchError(() => {
-        this.syncError = 'تعذر مزامنة الأسعار.';
-        return of(null);
-      })
-    ).subscribe(() => {
-      this.loadPriceStatus();
-      this.loadProviderStatus();
-      this.refreshService.notify('prices:changed');
-      this.syncingPrices = false;
-    });
-  }
 
   configureApiKey(): void {
     const dialogRef = this.dialog.open(EodhdApiKeyDialogComponent, {
@@ -120,50 +90,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Number of API calls one full sync will consume (= number of assets with a ticker). */
-  get estimatedCallsPerSync(): number {
-    return this.priceSyncStatus?.assetsWithTicker ?? 0;
-  }
 
-  /** Combined remaining credits across all EODHD API keys. */
-  get remaining(): number {
-    if (this.providerStatus?.keys?.length) {
-      return this.providerStatus.keys.reduce((sum, key) => sum + key.remaining, 0);
-    }
-    return this.providerStatus?.remaining ?? 0;
-  }
-
-  /** How many full syncs the user can still do today. */
-  get availableSyncClicks(): number {
-    const callsPerSync = this.estimatedCallsPerSync;
-    return callsPerSync > 0 ? Math.floor(this.remaining / callsPerSync) : 0;
-  }
-
-  /** True when the button should be disabled: not enough credits, no assets, or provider data not yet loaded. */
-  get isSyncDisabled(): boolean {
-    if (this.providerLoading || !this.providerStatus) return true;
-    const callsPerSync = this.estimatedCallsPerSync;
-    return callsPerSync <= 0 || this.remaining < callsPerSync;
-  }
-
-  private loadPriceStatus(): void {
-    this.priceFetchService.getStatus().pipe(
-      timeout(10000),
-      catchError(() => of(null as PriceFetchStatus | null))
-    ).subscribe(status => {
-      this.priceSyncStatus = status;
-    });
-  }
-
-  private loadProviderStatus(): void {
-    this.providerLoading = true;
-    this.priceProviders.getEodhdStatus().pipe(
-      timeout(5000),
-      catchError(() => of(null as PriceProviderStatus | null))
-    ).subscribe(status => {
-      this.applyProviderStatus(status);
-    });
-  }
 
   private checkEodhdSetup(): void {
     if (this.eodhdPromptDismissedForSession) {
@@ -224,8 +151,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   private applyProviderStatus(status: PriceProviderStatus | null): void {
-    this.providerStatus = status;
-    this.providerLoading = false;
+    // Only used to clear loading state or update if we had it, but now unused in template
   }
 
   private dismissEodhdPrompt(): void {

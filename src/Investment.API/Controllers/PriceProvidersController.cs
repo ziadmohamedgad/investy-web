@@ -103,6 +103,13 @@ public class PriceProvidersController : ControllerBase
         });
     }
 
+    [HttpDelete("eodhd/configuration")]
+    public async Task<ActionResult> DeleteEodhdConfiguration()
+    {
+        await _unitOfWork.AppSettings.SetAsync("EodhdApiKey", "");
+        return Ok(new { Message = "API key cleared." });
+    }
+
     public class SaveEodhdApiKeyRequest
     {
         public string ApiKey { get; set; } = string.Empty;

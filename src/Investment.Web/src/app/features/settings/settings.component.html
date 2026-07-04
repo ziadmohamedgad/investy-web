@@ -1,0 +1,65 @@
+<div class="settings-page page-shell" dir="rtl">
+  <div class="header-actions">
+    <div>
+      <h1 class="text-gradient">الإعدادات</h1>
+      <p class="text-muted">مفتاح EODHD وبيانات المحفظة</p>
+    </div>
+  </div>
+
+  <div class="notice glass-panel message-box" *ngIf="message">
+    {{ message }}
+  </div>
+
+  <section class="settings-section glass-panel">
+    <div class="section-title">
+      <h2>الأسعار والبيانات</h2>
+    </div>
+    <div class="head-actions inline-actions">
+      <button mat-button class="ghost export-button" (click)="exportHoldings()" [disabled]="syncingPrices">تصدير المحفظة</button>
+      <button mat-button class="ghost export-button" (click)="exportTransactions()" [disabled]="syncingPrices">تصدير المعاملات</button>
+      <button mat-raised-button color="primary" class="primary" (click)="syncPrices()" [disabled]="syncingPrices">
+        <mat-icon *ngIf="!syncingPrices">sync</mat-icon>
+        <mat-icon *ngIf="syncingPrices">hourglass_top</mat-icon>
+        <span>مزامنة الأسعار</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="settings-section glass-panel">
+    <div class="section-title flex-between">
+      <h2>حالة المفتاح</h2>
+      <button mat-button class="ghost" (click)="loadStatus()">تحديث</button>
+    </div>
+
+    <div *ngIf="loadingStatus" class="loading-state">
+      <p>جاري تحميل بيانات المفتاح...</p>
+    </div>
+    
+    <div *ngIf="!loadingStatus && !status" class="empty-state">
+      <p>لم يتم تحميل بيانات المفتاح.</p>
+    </div>
+    
+    <div *ngIf="!loadingStatus && status" class="settings-list">
+      <div class="status-item"><span>الاسم</span> <b>{{ status.name }}</b></div>
+      <div class="status-item"><span>البريد</span> <b>{{ status.email }}</b></div>
+      <div class="status-item"><span>الخطة</span> <b>{{ status.subscriptionType }}</b></div>
+      <div class="status-item"><span>المتبقي</span> <b>{{ status.remaining }}</b></div>
+      <div class="status-item"><span>المستخدم اليوم</span> <b>{{ status.apiRequestsUsedToday }}</b></div>
+      <div class="status-item"><span>الإجمالي</span> <b>{{ status.totalAvailable }}</b></div>
+    </div>
+  </section>
+
+  <section class="settings-section glass-panel">
+    <div class="section-title">
+      <h2>تغيير المفتاح</h2>
+    </div>
+    <div class="mobile-form form-group">
+      <label>مفتاح EODHD جديد</label>
+      <input class="field form-control" [(ngModel)]="newApiKey" placeholder="أدخل المفتاح هنا..." />
+    </div>
+    <div class="form-actions">
+      <button mat-raised-button color="warn" class="danger" (click)="clearKey()" [disabled]="saving">مسح المفتاح</button>
+      <button mat-raised-button color="primary" class="primary" (click)="saveKey()" [disabled]="saving || !newApiKey">حفظ</button>
+    </div>
+  </section>
+</div>

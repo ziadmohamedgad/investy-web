@@ -35,50 +35,11 @@
         المعاملات
         <mat-icon>receipt_long</mat-icon>
       </a>
+      <a routerLink="/settings" routerLinkActive="active">
+        الإعدادات
+        <mat-icon>settings</mat-icon>
+      </a>
     </nav>
-
-    <div class="sidebar-sync glass-panel">
-      <div class="sidebar-sync-title">
-        <mat-icon>cloud</mat-icon>
-        <span>مزامنة الأسعار</span>
-      </div>
-
-      <button mat-raised-button color="primary" type="button" (click)="syncPrices()" [disabled]="syncingPrices || isSyncDisabled">
-        <mat-icon>{{ syncingPrices ? 'hourglass_top' : 'sync' }}</mat-icon>
-        <span>{{ syncingPrices ? 'جاري المزامنة' : 'مزامنة' }}</span>
-      </button>
-
-      <button
-        *ngIf="providerStatus?.hasApiKey === false"
-        mat-button
-        type="button"
-        class="api-key-sidebar-button"
-        (click)="configureApiKey()">
-        <mat-icon>vpn_key</mat-icon>
-        <span>إضافة مفتاح EODHD</span>
-      </button>
-
-      <div class="sync-metrics" *ngIf="providerStatus">
-        <span>مرات المزامنة المتاحة: {{ availableSyncClicks }}</span>
-        <span>المتبقي الإجمالي من الطلبات: {{ remaining }}</span>
-        <span>كل مزامنة كاملة تستخدم {{ estimatedCallsPerSync }} طلب (أسهم فقط)</span>
-        <span>المستخدم: {{ providerStatus.apiRequestsUsedToday }} / {{ providerStatus.totalAvailable }}</span>
-      </div>
-
-      <div class="sync-metrics" *ngIf="providerLoading && !providerStatus">
-        <span>جاري تحميل بيانات الحصة...</span>
-      </div>
-
-      <div class="sync-metrics" *ngIf="!providerLoading && !providerStatus">
-        <span>تعذر تحميل بيانات الحصة.</span>
-      </div>
-
-      <div *ngIf="isSyncDisabled && !providerLoading && providerStatus && estimatedCallsPerSync > 0" class="sync-warning">
-        المتبقي لا يكفي لمزامنة كاملة.
-      </div>
-
-      <div *ngIf="syncError" class="sync-warning">{{ syncError }}</div>
-    </div>
   </aside>
 
   <div class="main-content">
