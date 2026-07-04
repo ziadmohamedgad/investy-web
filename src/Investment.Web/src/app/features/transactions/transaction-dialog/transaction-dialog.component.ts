@@ -106,9 +106,9 @@ export class TransactionDialogComponent {
         manufacturingFeePerGram: this.data.transaction.manufacturingFeePerGram ?? 0,
         fees: this.data.transaction.fees ?? 0,
         dividendKind: this.data.transaction.dividendKind ?? 'Cash',
-        dividendAmount: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Cash' ? this.data.transaction.netAmount : null,
-        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity : null,
-        freeSharesMarketPrice: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.pricePerUnit : null,
+        dividendAmount: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Cash' ? this.data.transaction.netAmount : undefined,
+        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity : undefined,
+        freeSharesMarketPrice: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.pricePerUnit : undefined,
         notes: this.data.transaction.notes ?? ''
       });
       this.form.get('assetQuery')!.disable({ emitEvent: false });
