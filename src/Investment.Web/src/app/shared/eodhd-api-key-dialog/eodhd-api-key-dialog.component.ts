@@ -62,6 +62,7 @@ import { PriceProvidersService } from '../../core/services/price-providers.servi
           (click)="save()">
           <mat-icon *ngIf="!saving">check</mat-icon>
           <span>حفظ المفتاح</span>
+        </button>
         <button *ngIf="!dialogRef.disableClose" mat-button class="dialog-action cancel-action" type="button" [disabled]="saving" (click)="cancel()">إلغاء</button>
       </div>
     </section>
