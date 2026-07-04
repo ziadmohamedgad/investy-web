@@ -38,7 +38,6 @@ export class AssetDialogComponent {
     { value: 'Gold', label: 'ذهب' },
     { value: 'Other', label: 'أخرى' }
   ];
-  readonly currencies = ['EGP', 'USD', 'EUR', 'GBP'];
 
   form;
 
@@ -51,7 +50,6 @@ export class AssetDialogComponent {
       assetCode: ['', [Validators.required, Validators.maxLength(20)]],
       assetName: ['', [Validators.required, Validators.maxLength(100)]],
       assetType: ['Stock', [Validators.required]],
-      currency: ['EGP', [Validators.required]],
       externalTicker: [''],
       isActive: [true, [Validators.required]]
     });
@@ -61,7 +59,6 @@ export class AssetDialogComponent {
         assetCode: data.asset.assetCode,
         assetName: data.asset.assetName,
         assetType: data.asset.assetType,
-        currency: data.asset.currency,
         externalTicker: data.asset.externalTicker ?? '',
         isActive: data.asset.isActive
       });
@@ -93,10 +90,14 @@ export class AssetDialogComponent {
       assetCode: this.toAssetCode(value.assetCode!).trim().toUpperCase(),
       assetName: this.toAscii(value.assetName!).trim(),
       assetType: value.assetType!,
-      currency: value.currency!,
+      currency: 'EGP',
       externalTicker: this.toAscii(value.externalTicker ?? '').trim() || undefined,
       isActive: !!value.isActive
     });
+  }
+
+  cancel(): void {
+    this.dialogRef.close(undefined);
   }
 
   sanitizeTextControl(controlName: 'assetCode' | 'assetName' | 'externalTicker', uppercase = false): void {
@@ -107,10 +108,6 @@ export class AssetDialogComponent {
     if (next !== value) {
       control?.setValue(next, { emitEvent: false });
     }
-  }
-
-  cancel(): void {
-    this.dialogRef.close(undefined);
   }
 
   private shouldIgnoreEnter(event: KeyboardEvent): boolean {
@@ -126,4 +123,3 @@ export class AssetDialogComponent {
     return value.replace(/[^A-Za-z]/g, '');
   }
 }
-

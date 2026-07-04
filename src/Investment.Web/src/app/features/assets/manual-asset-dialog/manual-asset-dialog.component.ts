@@ -77,7 +77,6 @@ export class ManualAssetDialogComponent implements OnInit {
       assetCode: ['', [Validators.required, Validators.maxLength(50)]],
       assetName: ['', [Validators.required, Validators.maxLength(200)]],
       assetType: ['Fund', [Validators.required]],
-      currency: ['EGP', [Validators.required]],
       transactionType: ['Buy', [Validators.required]],
       transactionDate: [this.today, [Validators.required, this.notFutureDateValidator]],
       quantity: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
@@ -132,8 +131,7 @@ export class ManualAssetDialogComponent implements OnInit {
     this.form.patchValue({
       assetCode: suggestion.assetCode,
       assetName: suggestion.assetName,
-      assetType: this.normalizeAssetType(suggestion.assetType),
-      currency: suggestion.currency
+      assetType: this.normalizeAssetType(suggestion.assetType)
     });
     this.refreshSellAvailability();
   }
@@ -331,7 +329,7 @@ export class ManualAssetDialogComponent implements OnInit {
       assetName: (isDailyAccrualFund ? 'Thndr Cloud Daily' : this.toAscii(value.assetName!)).trim(),
       assetType: finalAssetType,
 
-      currency: value.currency!,
+      currency: 'EGP',
       isDailyAccrualFund,
       transactionType: value.transactionType!,
       transactionDate: new Date(value.transactionDate!),
