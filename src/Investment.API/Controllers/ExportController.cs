@@ -33,4 +33,15 @@ public class ExportController : ControllerBase
         var fileContent = _exportService.ExportTransactions(transactions);
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Transactions_{DateTime.UtcNow:yyyyMMdd}.xlsx");
     }
+
+    [HttpGet("workbook")]
+    public async Task<IActionResult> ExportWorkbook()
+    {
+        var dashboard = await _analyticsService.GetSummaryAsync();
+        var holdings = await _analyticsService.GetHoldingsAsync();
+        var transactions = await _transactionService.GetAllAsync();
+
+        var fileContent = _exportService.ExportFullWorkbook(dashboard, holdings, transactions);
+        return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Investy-{DateTime.Now:yyyyMMdd-HHmm}.xlsx");
+    }
 }

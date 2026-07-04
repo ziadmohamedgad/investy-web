@@ -54,12 +54,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
-  exportHoldings(): void {
-    this.exportService.exportHoldings();
-  }
-
-  exportTransactions(): void {
-    this.exportService.exportTransactions();
+  exportWorkbook(): void {
+    this.exportService.exportWorkbook();
   }
 
   syncPrices(): void {
@@ -103,20 +99,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   clearKey(): void {
+    if (this.saving) return;
     this.saving = true;
-    this.message = 'جاري مسح المفتاح...';
     this.priceProviders.clearEodhdApiKey().subscribe({
       next: () => {
-        this.saving = false;
-        this.status = null;
-        this.newApiKey = '';
-        this.message = 'تم مسح المفتاح بنجاح.';
-        setTimeout(() => this.message = '', 3000);
+        window.location.href = '/';
       },
       error: () => {
+        this.message = 'حدث خطأ أثناء مسح المفتاح';
         this.saving = false;
-        this.message = 'حدث خطأ أثناء مسح المفتاح.';
-        setTimeout(() => this.message = '', 3000);
       }
     });
   }

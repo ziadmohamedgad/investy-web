@@ -14,6 +14,10 @@ export class ExportService {
     window.location.href = `${this.apiUrl}/holdings`;
   }
 
+  exportWorkbook(): void {
+    window.location.href = `${this.apiUrl}/workbook`;
+  }
+
   exportTransactions(assetId?: number, type?: string, fromDate?: string, toDate?: string): void {
     let params = new HttpParams();
     if (assetId) params = params.set('assetId', assetId.toString());

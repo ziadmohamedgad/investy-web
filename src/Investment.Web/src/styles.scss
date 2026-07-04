@@ -540,3 +540,8 @@ html[dir='rtl'] .header-actions > button {
 .type-buy { color: var(--accent); }
 .type-sell { color: var(--danger); }
 .type-dividend { color: var(--primary); }
+
+.api-key-blocking-backdrop {
+  background-color: var(--bg-base) !important;
+  opacity: 1 !important;
+}

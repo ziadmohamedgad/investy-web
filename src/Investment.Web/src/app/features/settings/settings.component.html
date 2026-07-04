@@ -11,13 +11,12 @@
   </div>
 
   <section class="settings-section glass-panel">
-    <div class="section-title">
+    <div class="section-title flex-between">
       <h2>الأسعار والبيانات</h2>
     </div>
-    <div class="head-actions inline-actions">
-      <button mat-button class="ghost export-button" (click)="exportHoldings()" [disabled]="syncingPrices">تصدير المحفظة</button>
-      <button mat-button class="ghost export-button" (click)="exportTransactions()" [disabled]="syncingPrices">تصدير المعاملات</button>
-      <button mat-raised-button color="primary" class="primary" (click)="syncPrices()" [disabled]="syncingPrices">
+    <div class="head-actions inline-actions" style="margin-top:12px; justify-content: flex-end; align-items: center; gap: 24px;">
+      <button mat-button class="ghost export-button" (click)="exportWorkbook()" [disabled]="syncingPrices">تصدير ملف</button>
+      <button mat-raised-button color="primary" class="primary sync-btn" (click)="syncPrices()" [disabled]="syncingPrices">
         <mat-icon *ngIf="!syncingPrices">sync</mat-icon>
         <mat-icon *ngIf="syncingPrices">hourglass_top</mat-icon>
         <span>مزامنة الأسعار</span>
@@ -40,12 +39,12 @@
     </div>
     
     <div *ngIf="!loadingStatus && status" class="settings-list">
-      <div class="status-item"><span>الاسم</span> <b>{{ status.name }}</b></div>
-      <div class="status-item"><span>البريد</span> <b>{{ status.email }}</b></div>
-      <div class="status-item"><span>الخطة</span> <b>{{ status.subscriptionType }}</b></div>
-      <div class="status-item"><span>المتبقي</span> <b>{{ status.remaining }}</b></div>
-      <div class="status-item"><span>المستخدم اليوم</span> <b>{{ status.apiRequestsUsedToday }}</b></div>
-      <div class="status-item"><span>الإجمالي</span> <b>{{ status.totalAvailable }}</b></div>
+      <div class="status-card"><span class="label">الاسم</span> <b class="value">{{ status.name }}</b></div>
+      <div class="status-card"><span class="label">البريد</span> <b class="value">{{ status.email }}</b></div>
+      <div class="status-card"><span class="label">الخطة</span> <b class="value">{{ status.subscriptionType }}</b></div>
+      <div class="status-card"><span class="label">المتبقي</span> <b class="value">{{ status.remaining }}</b></div>
+      <div class="status-card"><span class="label">المستخدم اليوم</span> <b class="value">{{ status.apiRequestsUsedToday }}</b></div>
+      <div class="status-card"><span class="label">الإجمالي</span> <b class="value">{{ status.totalAvailable }}</b></div>
     </div>
   </section>
 
@@ -54,11 +53,11 @@
       <h2>تغيير المفتاح</h2>
     </div>
     <div class="mobile-form form-group">
-      <label>مفتاح EODHD جديد</label>
+      <label class="field-label">مفتاح EODHD جديد</label>
       <input class="field form-control" [(ngModel)]="newApiKey" placeholder="أدخل المفتاح هنا..." />
     </div>
     <div class="form-actions">
-      <button mat-raised-button color="warn" class="danger" (click)="clearKey()" [disabled]="saving">مسح المفتاح</button>
+      <button mat-button class="ghost danger" (click)="clearKey()" [disabled]="saving">مسح المفتاح</button>
       <button mat-raised-button color="primary" class="primary" (click)="saveKey()" [disabled]="saving || !newApiKey">حفظ</button>
     </div>
   </section>

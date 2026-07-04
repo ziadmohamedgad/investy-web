@@ -109,19 +109,16 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         width: '460px',
         maxWidth: '92vw',
         panelClass: 'eodhd-api-key-dialog-panel',
-        backdropClass: 'confirm-delete-backdrop',
+        backdropClass: 'api-key-blocking-backdrop',
         autoFocus: '#eodhd-api-key',
-        disableClose: false
+        disableClose: true
       });
 
       dialogRef.afterClosed().subscribe((saved) => {
         if (saved) {
           this.applyProviderStatus(saved);
           this.refreshService.notify('prices:changed');
-          return;
         }
-
-        this.dismissEodhdPrompt();
       });
     });
   }
