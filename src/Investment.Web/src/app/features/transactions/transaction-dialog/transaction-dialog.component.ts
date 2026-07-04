@@ -367,12 +367,12 @@ export class TransactionDialogComponent {
     }
 
     if (this.form.get('transactionType')?.value === 'Dividend') {
-      return 'الأرباح متاحة فقط بعد وجود عملية شراء سابقة لهذا السهم.';
+      return 'الأرباح متاحة فقط بعد شراء مسبق.';
     }
 
     return this.isDailyAccrualFundSelected
-      ? 'السحب متاح فقط بعد وجود إيداع سابق لهذا الأصل.'
-      : 'البيع متاح فقط بعد وجود عملية شراء سابقة لهذا الأصل.';
+      ? 'السحب متاح فقط بعد إيداع مسبق.'
+      : 'البيع متاح فقط بعد شراء مسبق.';
   }
 
   get sellBlocked(): boolean {
@@ -420,7 +420,7 @@ export class TransactionDialogComponent {
   }
 
   get transactionTotalLabel(): string {
-    return this.transactionNetAmount.toLocaleString('ar-EG', {
+    return this.transactionNetAmount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
