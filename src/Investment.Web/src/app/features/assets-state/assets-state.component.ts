@@ -89,17 +89,19 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
     return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
   }
 
-  getAssetCodeClass(assetType: string): string {
-    switch (assetType) {
-      case 'Gold':
-        return 'asset-code asset-code-gold';
-      case 'Fund':
-        return 'asset-code asset-code-fund';
-      case 'Other':
-        return 'asset-code asset-code-other';
-      default:
-        return 'asset-code asset-code-stock';
+  getAssetCodeClass(assetType: string, isDailyAccrualFund?: boolean): string {
+    if (isDailyAccrualFund) {
+      return 'type-cloud';
     }
+    const map: Record<string, string> = {
+      'Stock': 'type-stock',
+      'ETF': 'type-etf',
+      'Crypto': 'type-crypto',
+      'Gold': 'type-metal-gold',
+      'Silver': 'type-metal-silver',
+      'Fund': 'type-fund'
+    };
+    return map[assetType] || 'type-other';
   }
 
   get isPreviousDisabled(): boolean {

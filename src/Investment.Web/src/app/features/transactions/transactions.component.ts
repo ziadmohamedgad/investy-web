@@ -34,7 +34,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   dataSource = new MatTableDataSource<Transaction>([]);
   pageSize = 7;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  displayedColumns: string[] = ['date', 'asset', 'type', 'quantity', 'price', 'total', 'edit', 'actions'];
+  displayedColumns: string[] = ['date', 'asset', 'type', 'quantity', 'price', 'total', 'actions'];
   loading = true;
   error: string | null = null;
   loadError: string | null = null;
@@ -431,15 +431,17 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return transaction.transactionType === 'Buy' ? 'شراء' : transaction.transactionType === 'Sell' ? 'بيع' : transaction.transactionType;
   }
-  getAssetCodeClass(assetType: string): string {
+  getAssetCodeClass(assetType: string, isDailyAccrualFund?: boolean): string {
+    if (isDailyAccrualFund) {
+      return 'type-cloud';
+    }
     const map: Record<string, string> = {
       'Stock': 'type-stock',
       'ETF': 'type-etf',
       'Crypto': 'type-crypto',
-      'Gold': 'type-metal',
-      'Silver': 'type-metal',
-      'Fund': 'type-fund',
-      'DailyAccrualFund': 'type-fund'
+      'Gold': 'type-metal-gold',
+      'Silver': 'type-metal-silver',
+      'Fund': 'type-fund'
     };
     return map[assetType] || 'type-other';
   }

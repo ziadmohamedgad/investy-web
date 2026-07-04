@@ -136,6 +136,16 @@ body.dark-theme,
   color-scheme: dark;
 }
 
+/* Dark Theme Overrides for Pill Colors to make them saturated and beautiful */
+.dark-theme .type-stock { background: color-mix(in srgb, #3b82f6 20%, transparent); color: #93c5fd; }
+.dark-theme .type-etf { background: color-mix(in srgb, #3b82f6 20%, transparent); color: #93c5fd; }
+.dark-theme .type-crypto { background: color-mix(in srgb, #8b5cf6 20%, transparent); color: #c4b5fd; }
+.dark-theme .type-metal-gold { background: color-mix(in srgb, #f59e0b 20%, transparent); color: #fcd34d; }
+.dark-theme .type-metal-silver { background: color-mix(in srgb, #64748b 20%, transparent); color: #cbd5e1; }
+.dark-theme .type-fund { background: color-mix(in srgb, #8b5cf6 20%, transparent); color: #c4b5fd; }
+.dark-theme .type-cloud { background: color-mix(in srgb, #10b981 20%, transparent); color: #6ee7b7; }
+.dark-theme .type-other { background: color-mix(in srgb, #64748b 20%, transparent); color: #cbd5e1; }
+
 *,
 *::before,
 *::after {
@@ -502,22 +512,29 @@ html[dir='rtl'] .header-actions > button {
 
 /* Asset Type and Transaction Type Pill Styles */
 .code {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: .85rem;
-  font-weight: 700;
-  letter-spacing: .5px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    min-height: 32px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+    font-weight: 900;
+    border: none;
+    font-size: .85rem;
+    letter-spacing: .5px;
 }
 
-.type-stock { border-color: #60a5fa; color: #60a5fa; background: rgba(96, 165, 250, .1); }
-.type-etf { border-color: #a78bfa; color: #a78bfa; background: rgba(167, 139, 250, .1); }
-.type-crypto { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, .1); }
-.type-metal { border-color: #fcd34d; color: #d97706; background: rgba(252, 211, 77, .15); }
-.type-fund { border-color: #34d399; color: #34d399; background: rgba(52, 211, 153, .1); }
-.type-other { border-color: #94a3b8; color: #94a3b8; background: rgba(148, 163, 184, .1); }
+.type-stock { background: #e6f4ff; color: #0369a1; }
+.type-etf { background: #e6f4ff; color: #0369a1; }
+.type-crypto { background: #f0e7ff; color: #7c3aed; }
+.type-metal-gold { background: #fff5d6; color: #f59e0b; }
+.type-metal-silver { background: #f1f5f9; color: #475569; }
+.type-fund { background: #f0e7ff; color: #7c3aed; }
+.type-cloud { background: #d8fbf3; color: #0f766e; }
+.type-other { background: #f1f5f9; color: #475569; }
 
 .type-buy { color: var(--accent); }
 .type-sell { color: var(--danger); }
