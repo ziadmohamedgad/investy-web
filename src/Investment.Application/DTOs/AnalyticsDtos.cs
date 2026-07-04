@@ -23,6 +23,7 @@ public class HoldingDto
     public decimal RealizedPnLPercent { get; set; }
     public decimal TotalPnL { get; set; }
     public decimal TotalPnLPercent { get; set; }
+    public decimal TotalAccruedReturn { get; set; }
 }
 
 // Performance endpoint

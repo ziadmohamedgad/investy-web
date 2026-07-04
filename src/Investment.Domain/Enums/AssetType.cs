@@ -7,5 +7,6 @@ public enum AssetType
     Gold = 2,
     RealEstate = 3,
     Crypto = 4,
-    Other = 5
+    Other = 5,
+    Silver = 6
 }

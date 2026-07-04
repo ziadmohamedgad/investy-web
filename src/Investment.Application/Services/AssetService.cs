@@ -111,7 +111,7 @@ public class AssetService : IAssetService
         }
 
         if (!Enum.TryParse<AssetType>(dto.AssetType, true, out var assetType) || assetType == AssetType.Stock)
-            throw new InvalidOperationException("Manual assets must use Gold, Fund, or Other type.");
+            throw new InvalidOperationException("Manual assets must use Gold, Silver, Fund, or Other type.");
 
         var asset = new Asset
         {
@@ -198,10 +198,10 @@ public class AssetService : IAssetService
         if (asset == null)
             return false;
 
-        if (asset.AssetType == AssetType.Gold && dto.GoldCashbackPerGram.HasValue)
+        if ((asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver) && dto.GoldCashbackPerGram.HasValue)
         {
             if (dto.GoldCashbackPerGram.Value < 0)
-                throw new InvalidOperationException("Gold cashback per gram cannot be negative.");
+                throw new InvalidOperationException("Cashback per gram cannot be negative.");
 
             asset.GoldCashbackPerGram = dto.GoldCashbackPerGram.Value;
         }
@@ -240,7 +240,7 @@ public class AssetService : IAssetService
         asset.DailyAccrualAnnualRatePercent = dto.IsDailyAccrualFund && dto.DailyAccrualAnnualRatePercent > 0
             ? dto.DailyAccrualAnnualRatePercent
             : 0m;
-        asset.GoldCashbackPerGram = asset.AssetType == AssetType.Gold
+        asset.GoldCashbackPerGram = (asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver)
             ? dto.GoldCashbackPerGram
             : 28.5m;
         asset.IsActive = dto.IsActive;
@@ -295,6 +295,7 @@ public class AssetService : IAssetService
 
     private static AssetSummaryDto CalculateStandardAssetSummary(Asset asset, List<Transaction> transactions, decimal currentPrice)
     {
+        var isPreciousMetal = asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver;
         decimal unitsHeld = 0;
         decimal avgCost = 0;
         decimal realizedPnL = asset.ClosedRealizedPnL;
@@ -305,35 +306,51 @@ public class AssetService : IAssetService
         foreach (var txn in transactions.OrderBy(t => t.TransactionDate).ThenBy(t => t.TransactionId))
         {
             var feeAmount = txn.Fees;
-            var goldPerGramAmount = asset.AssetType == AssetType.Gold
+            var metalPerGramAmount = isPreciousMetal
                 ? txn.Quantity * txn.ManufacturingFeePerGram
                 : 0m;
 
             if (txn.TransactionType == TransactionType.Buy)
             {
                 var prevTotal = avgCost * unitsHeld;
-                var newTotal = txn.TotalAmount + goldPerGramAmount + feeAmount;
+                var newTotal = txn.TotalAmount + metalPerGramAmount + feeAmount;
                 totalFeesPaid += feeAmount;
                 unitsHeld += txn.Quantity;
                 avgCost = unitsHeld > 0 ? (prevTotal + newTotal) / unitsHeld : 0;
             }
-            else // Sell
+            else if (txn.TransactionType == TransactionType.Sell)
             {
                 totalFeesPaid += feeAmount;
-                var saleProceeds = txn.TotalAmount + goldPerGramAmount - feeAmount;
+                var saleProceeds = txn.TotalAmount + metalPerGramAmount - feeAmount;
                 var soldCostBasis = avgCost * txn.Quantity;
                 realizedCostBasis += soldCostBasis;
                 realizedPnL += saleProceeds - soldCostBasis;
                 unitsHeld -= txn.Quantity;
             }
+            else // Dividend
+            {
+                if (txn.DividendKind == DividendKind.Stock)
+                {
+                    // Free shares at zero cost: lower the average cost basis
+                    var previousTotal = avgCost * unitsHeld;
+                    unitsHeld += txn.Quantity;
+                    avgCost = unitsHeld > 0 ? (previousTotal + txn.NetAmount) / unitsHeld : 0;
+                }
+                else
+                {
+                    // Cash dividend: realized profit
+                    realizedPnL += txn.NetAmount;
+                }
+            }
         }
 
         var costBasis = avgCost * unitsHeld;
         var isClosedPosition = Math.Abs(unitsHeld) < ClosedPositionQuantityTolerance;
-        var currentValue = asset.AssetType == AssetType.Gold
+        var currentValue = isPreciousMetal
             ? unitsHeld * (effectiveCurrentPrice + asset.GoldCashbackPerGram)
             : unitsHeld * effectiveCurrentPrice;
         var unrealizedPnL = currentValue - costBasis;
+        var totalAccruedReturn = Math.Round(unrealizedPnL + realizedPnL, 2);
 
         return new AssetSummaryDto
         {
@@ -357,7 +374,8 @@ public class AssetService : IAssetService
             RealizedPnL = Math.Round(realizedPnL, 2),
             RealizedPnLPercent = realizedCostBasis != 0 ? Math.Round(realizedPnL / realizedCostBasis * 100, 2) : 0,
             TotalPnL = Math.Round(unrealizedPnL + realizedPnL, 2),
-            TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0
+            TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0,
+            TotalAccruedReturn = totalAccruedReturn
         };
     }
 
@@ -428,7 +446,8 @@ public class AssetService : IAssetService
             RealizedPnL = Math.Round(realizedPnL, 2),
             RealizedPnLPercent = realizedCostBasis != 0 ? Math.Round(realizedPnL / realizedCostBasis * 100, 2) : 0,
             TotalPnL = Math.Round(unrealizedPnL + realizedPnL, 2),
-            TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0
+            TotalPnLPercent = costBasis != 0 ? Math.Round((unrealizedPnL + realizedPnL) / costBasis * 100, 2) : 0,
+            TotalAccruedReturn = Math.Round(unrealizedPnL + realizedPnL, 2)
         };
     }
 
@@ -462,8 +481,50 @@ public class AssetService : IAssetService
     {
         var annualRate = asset.DailyAccrualAnnualRatePercent > 0 ? asset.DailyAccrualAnnualRatePercent : 16m;
         var anchorDate = (accrualStartDate ?? asset.CreatedAt).Date;
-        var days = Math.Max(0d, (asOf.Date - anchorDate).TotalDays);
-        var dailyGrowth = Math.Pow(1d + (double)annualRate / 100d, days / 365.25d);
+
+        // Convert to Egypt local time (UTC+3, no DST)
+        var egyptOffset = TimeSpan.FromHours(3);
+        var egyptTime = asOf.Kind == DateTimeKind.Utc
+            ? asOf + egyptOffset
+            : asOf.ToUniversalTime() + egyptOffset;
+
+        // Accrual for a given day is posted at 5 PM Egypt time
+        var effectiveDate = egyptTime.Hour < 17
+            ? egyptTime.Date.AddDays(-1)   // Before 5 PM: yesterday's rate applies
+            : egyptTime.Date;              // At/after 5 PM: today's rate is posted
+
+        // Friday and Saturday roll back to the preceding Thursday
+        // (Thursday already pre-paid Fri & Sat returns)
+        if (effectiveDate.DayOfWeek == DayOfWeek.Friday)
+            effectiveDate = effectiveDate.AddDays(-1);   // → Thursday
+        else if (effectiveDate.DayOfWeek == DayOfWeek.Saturday)
+            effectiveDate = effectiveDate.AddDays(-2);   // → Thursday
+
+        if (effectiveDate <= anchorDate)
+            return 1m;
+
+        // Count accrual days from anchorDate+1 to effectiveDate:
+        //   Sunday–Wednesday: +1 each
+        //   Thursday:         +3 (covers Thu + Fri + Sat)
+        //   Friday, Saturday: +0 (pre-counted in Thursday)
+        double accrualDays = 0;
+        for (var d = anchorDate.AddDays(1); d <= effectiveDate; d = d.AddDays(1))
+        {
+            switch (d.DayOfWeek)
+            {
+                case DayOfWeek.Friday:
+                case DayOfWeek.Saturday:
+                    break;
+                case DayOfWeek.Thursday:
+                    accrualDays += 3;
+                    break;
+                default:
+                    accrualDays += 1;
+                    break;
+            }
+        }
+
+        var dailyGrowth = Math.Pow(1d + (double)annualRate / 100d, accrualDays / 365.25d);
         return Math.Round((decimal)dailyGrowth, 6);
     }
 }

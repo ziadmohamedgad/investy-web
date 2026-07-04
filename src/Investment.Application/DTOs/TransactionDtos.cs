@@ -16,6 +16,7 @@ public class TransactionDto
     public decimal Fees { get; set; }
     public decimal ManufacturingFeePerGram { get; set; }
     public decimal NetAmount { get; set; }
+    public string DividendKind { get; set; } = "Cash";
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -29,6 +30,7 @@ public class CreateTransactionDto
     public decimal PricePerUnit { get; set; }
     public decimal Fees { get; set; }
     public decimal ManufacturingFeePerGram { get; set; }
+    public string DividendKind { get; set; } = "Cash";
     public string? Notes { get; set; }
 }
 
@@ -41,5 +43,6 @@ public class UpdateTransactionDto
     public decimal PricePerUnit { get; set; }
     public decimal Fees { get; set; }
     public decimal ManufacturingFeePerGram { get; set; }
+    public string DividendKind { get; set; } = "Cash";
     public string? Notes { get; set; }
 }

@@ -14,6 +14,7 @@ public class Transaction
     public decimal Fees { get; set; }
     public decimal ManufacturingFeePerGram { get; set; }
     public decimal NetAmount { get; set; }
+    public DividendKind DividendKind { get; set; } = DividendKind.Cash;
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

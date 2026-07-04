@@ -75,7 +75,8 @@ public class AnalyticsService : IAnalyticsService
                 RealizedPnL = summary.RealizedPnL,
                 RealizedPnLPercent = summary.RealizedPnLPercent,
                 TotalPnL = summary.TotalPnL,
-                TotalPnLPercent = summary.TotalPnLPercent
+                TotalPnLPercent = summary.TotalPnLPercent,
+                TotalAccruedReturn = summary.TotalAccruedReturn
             });
         }
 

@@ -3,5 +3,6 @@ namespace Investment.Domain.Enums;
 public enum TransactionType
 {
     Buy = 0,
-    Sell = 1
+    Sell = 1,
+    Dividend = 2
 }

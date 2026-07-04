@@ -74,6 +74,8 @@ public class AssetSummaryDto
     public decimal RealizedPnLPercent { get; set; }
     public decimal TotalPnL { get; set; }
     public decimal TotalPnLPercent { get; set; }
+    /// <summary>Total realized + unrealized profit regardless of withdrawals. Never decreases on partial withdrawal.</summary>
+    public decimal TotalAccruedReturn { get; set; }
 }
 
 public class ExternalAssetSearchDto

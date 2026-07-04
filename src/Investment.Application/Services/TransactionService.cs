@@ -80,6 +80,7 @@ public class TransactionService : ITransactionService
             Fees = dto.Fees,
             ManufacturingFeePerGram = dto.ManufacturingFeePerGram,
             NetAmount = normalized.NetAmount,
+            DividendKind = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var dk) ? dk : DividendKind.Cash,
             Notes = dto.Notes,
             CreatedAt = DateTime.UtcNow
         };
@@ -155,6 +156,7 @@ public class TransactionService : ITransactionService
         transaction.Fees = dto.Fees;
         transaction.ManufacturingFeePerGram = dto.ManufacturingFeePerGram;
         transaction.NetAmount = normalized.NetAmount;
+        transaction.DividendKind = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var dk) ? dk : DividendKind.Cash;
         transaction.Notes = dto.Notes;
 
         ValidateTransactionSequence(asset, existingTxns.Append(transaction), accrualStartDate);
@@ -176,16 +178,23 @@ public class TransactionService : ITransactionService
         decimal manufacturingFeePerGram,
         DateTime accrualStartDate)
     {
-        var goldPerGramAmount = asset.AssetType == AssetType.Gold
-            ? quantity * manufacturingFeePerGram
-            : 0m;
+        var isPreciousMetal = asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver;
+        var metalPerGramAmount = isPreciousMetal ? quantity * manufacturingFeePerGram : 0m;
+
+        if (txnType == TransactionType.Dividend)
+        {
+            // quantity = free shares (Stock) or cash amount (Cash)
+            // For Stock dividend: NetAmount = 0 (no cash changes hands)
+            // For Cash dividend: NetAmount = quantity (the cash received)
+            return (quantity, pricePerUnit, quantity, quantity);
+        }
 
         if (!asset.IsDailyAccrualFund)
         {
             var totalAmount = quantity * pricePerUnit;
             var netAmount = txnType == TransactionType.Buy
-                ? totalAmount + goldPerGramAmount + fees
-                : totalAmount + goldPerGramAmount - fees;
+                ? totalAmount + metalPerGramAmount + fees
+                : totalAmount + metalPerGramAmount - fees;
 
             if (txnType == TransactionType.Sell && netAmount < 0)
             {
@@ -256,6 +265,17 @@ public class TransactionService : ITransactionService
             {
                 hasBuy = true;
                 unitsHeld += quantity;
+                continue;
+            }
+
+            if (transaction.TransactionType == TransactionType.Dividend)
+            {
+                if (!hasBuy)
+                    throw new InvalidOperationException("لا يمكن تسجيل أرباح قبل وجود عملية شراء سابقة للسهم.");
+
+                if (transaction.DividendKind == DividendKind.Stock)
+                    unitsHeld += transaction.Quantity;
+
                 continue;
             }
 
