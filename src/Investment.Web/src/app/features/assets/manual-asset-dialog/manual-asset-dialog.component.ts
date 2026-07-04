@@ -32,19 +32,6 @@ export interface ManualAssetDialogData {
     MatButtonModule,
     MatAutocompleteModule
   ],
-@Component({
-  selector: 'app-manual-asset-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatAutocompleteModule
-  ],
   templateUrl: './manual-asset-dialog.component.html',
   styleUrl: './manual-asset-dialog.component.scss'
 })
