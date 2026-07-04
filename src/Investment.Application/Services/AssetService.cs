@@ -78,8 +78,10 @@ public class AssetService : IAssetService
         asset.IsDailyAccrualFund = dto.IsDailyAccrualFund;
         asset.DailyAccrualAnnualRatePercent = dto.IsDailyAccrualFund && dto.DailyAccrualAnnualRatePercent > 0
             ? dto.DailyAccrualAnnualRatePercent
+            : (dto.IsDailyAccrualFund ? 16m : 0m);
+        asset.GoldCashbackPerGram = (asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver)
+            ? (dto.GoldCashbackPerGram >= 0 ? dto.GoldCashbackPerGram : 28.5m)
             : 0m;
-        asset.GoldCashbackPerGram = dto.GoldCashbackPerGram >= 0 ? dto.GoldCashbackPerGram : 28.5m;
         var created = await _unitOfWork.Assets.AddAsync(asset);
         await _excelSyncService.RefreshAsync();
         return _mapper.Map<AssetDto>(created);
@@ -124,8 +126,10 @@ public class AssetService : IAssetService
             IsDailyAccrualFund = dto.IsDailyAccrualFund,
             DailyAccrualAnnualRatePercent = dto.IsDailyAccrualFund && dto.DailyAccrualAnnualRatePercent > 0
                 ? dto.DailyAccrualAnnualRatePercent
+                : (dto.IsDailyAccrualFund ? 16m : 0m),
+            GoldCashbackPerGram = (assetType == AssetType.Gold || assetType == AssetType.Silver)
+                ? (dto.GoldCashbackPerGram >= 0 ? dto.GoldCashbackPerGram : 28.5m)
                 : 0m,
-            GoldCashbackPerGram = dto.GoldCashbackPerGram >= 0 ? dto.GoldCashbackPerGram : 28.5m,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -239,10 +243,10 @@ public class AssetService : IAssetService
         asset.IsDailyAccrualFund = dto.IsDailyAccrualFund;
         asset.DailyAccrualAnnualRatePercent = dto.IsDailyAccrualFund && dto.DailyAccrualAnnualRatePercent > 0
             ? dto.DailyAccrualAnnualRatePercent
-            : 0m;
+            : (dto.IsDailyAccrualFund ? 16m : 0m);
         asset.GoldCashbackPerGram = (asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver)
-            ? dto.GoldCashbackPerGram
-            : 28.5m;
+            ? (dto.GoldCashbackPerGram >= 0 ? dto.GoldCashbackPerGram : 28.5m)
+            : 0m;
         asset.IsActive = dto.IsActive;
 
         await _unitOfWork.Assets.UpdateAsync(asset);
@@ -344,7 +348,9 @@ public class AssetService : IAssetService
             }
         }
 
+        unitsHeld = Math.Abs(unitsHeld) <= QuantityTolerance ? 0m : unitsHeld;
         var costBasis = avgCost * unitsHeld;
+        var remainingAverageCost = unitsHeld > QuantityTolerance ? avgCost : 0m;
         var isClosedPosition = Math.Abs(unitsHeld) < ClosedPositionQuantityTolerance;
         var currentValue = isPreciousMetal
             ? unitsHeld * (effectiveCurrentPrice + asset.GoldCashbackPerGram)
@@ -362,8 +368,8 @@ public class AssetService : IAssetService
             DailyAccrualAnnualRatePercent = asset.DailyAccrualAnnualRatePercent,
             GoldCashbackPerGram = asset.GoldCashbackPerGram,
             IsClosedPosition = isClosedPosition,
-            TotalUnitsHeld = Math.Round(unitsHeld, 4),
-            AverageBuyPrice = Math.Round(unitsHeld > QuantityTolerance ? avgCost : 0m, 5),
+            TotalUnitsHeld = Math.Round(unitsHeld, 5),
+            AverageBuyPrice = Math.Round(remainingAverageCost, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
             TotalPaidIncludingFees = Math.Round(costBasis, 2),
@@ -418,8 +424,10 @@ public class AssetService : IAssetService
             }
         }
 
+        unitsHeld = Math.Abs(unitsHeld) <= QuantityTolerance ? 0m : unitsHeld;
         var effectiveCurrentPrice = GetDailyAccrualUnitPrice(asset, DateTime.UtcNow, accrualStartDate);
         var costBasis = avgCost * unitsHeld;
+        var remainingAverageCost = unitsHeld > QuantityTolerance ? avgCost : 0m;
         var isClosedPosition = Math.Abs(unitsHeld) < ClosedPositionQuantityTolerance;
         var currentValue = unitsHeld * effectiveCurrentPrice;
         var unrealizedPnL = currentValue - costBasis;
@@ -434,8 +442,8 @@ public class AssetService : IAssetService
             DailyAccrualAnnualRatePercent = asset.DailyAccrualAnnualRatePercent,
             GoldCashbackPerGram = asset.GoldCashbackPerGram,
             IsClosedPosition = isClosedPosition,
-            TotalUnitsHeld = Math.Round(unitsHeld, 4),
-            AverageBuyPrice = Math.Round(unitsHeld > QuantityTolerance ? avgCost : 0m, 5),
+            TotalUnitsHeld = Math.Round(unitsHeld, 5),
+            AverageBuyPrice = Math.Round(remainingAverageCost, 5),
             TotalCostBasis = Math.Round(costBasis, 2),
             TotalFeesPaid = Math.Round(totalFeesPaid, 2),
             TotalPaidIncludingFees = Math.Round(costBasis, 2),
