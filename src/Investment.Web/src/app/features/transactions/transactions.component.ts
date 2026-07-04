@@ -213,6 +213,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
             pricePerUnit: result.pricePerUnit,
             fees: result.fees,
             manufacturingFeePerGram: result.manufacturingFeePerGram,
+            dividendKind: result.dividendKind,
             notes: result.notes
           })
         )
@@ -297,6 +298,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
           pricePerUnit: result.pricePerUnit,
           fees: result.fees,
           manufacturingFeePerGram: result.manufacturingFeePerGram,
+          dividendKind: result.dividendKind,
           notes: result.notes
         };
 

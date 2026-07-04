@@ -101,6 +101,7 @@ export interface CreateManualAssetDraft {
   pricePerUnit: number;
   fees: number;
   manufacturingFeePerGram: number;
+  dividendKind?: string;
 }
 
 export interface SetAssetCurrentPrice {

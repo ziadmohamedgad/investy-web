@@ -65,7 +65,8 @@ public class TransactionService : ITransactionService
             ? existingTxnsForAsset
             : new List<Transaction>();
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
-        var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
+        var dk = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var parsedDk) ? parsedDk : DividendKind.Cash;
+        var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate, dk);
         await ValidateSellAgainstCurrentMarketValueAsync(asset, existingTxnsForAsset, txnType, normalized.NetAmount);
 
         var transaction = new Transaction
@@ -80,7 +81,7 @@ public class TransactionService : ITransactionService
             Fees = dto.Fees,
             ManufacturingFeePerGram = dto.ManufacturingFeePerGram,
             NetAmount = normalized.NetAmount,
-            DividendKind = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var dk) ? dk : DividendKind.Cash,
+            DividendKind = dk,
             Notes = dto.Notes,
             CreatedAt = DateTime.UtcNow
         };
@@ -144,7 +145,8 @@ public class TransactionService : ITransactionService
             .Where(t => t.TransactionId != id)
             .ToList();
         var accrualStartDate = AssetService.GetDailyAccrualStartDate(asset, existingTxns, dto.TransactionDate);
-        var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate);
+        var dk = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var parsedDk) ? parsedDk : DividendKind.Cash;
+        var normalized = NormalizeTransaction(asset, txnType, dto.TransactionDate, dto.Quantity, dto.PricePerUnit, dto.Fees, dto.ManufacturingFeePerGram, accrualStartDate, dk);
         await ValidateSellAgainstCurrentMarketValueAsync(asset, existingTxns, txnType, normalized.NetAmount);
 
         transaction.AssetId = dto.AssetId;
@@ -156,7 +158,7 @@ public class TransactionService : ITransactionService
         transaction.Fees = dto.Fees;
         transaction.ManufacturingFeePerGram = dto.ManufacturingFeePerGram;
         transaction.NetAmount = normalized.NetAmount;
-        transaction.DividendKind = Enum.TryParse<DividendKind>(dto.DividendKind, true, out var dk) ? dk : DividendKind.Cash;
+        transaction.DividendKind = dk;
         transaction.Notes = dto.Notes;
 
         ValidateTransactionSequence(asset, existingTxns.Append(transaction), accrualStartDate);
@@ -176,7 +178,8 @@ public class TransactionService : ITransactionService
         decimal pricePerUnit,
         decimal fees,
         decimal manufacturingFeePerGram,
-        DateTime accrualStartDate)
+        DateTime accrualStartDate,
+        DividendKind dividendKind)
     {
         var isPreciousMetal = asset.AssetType == AssetType.Gold || asset.AssetType == AssetType.Silver;
         var metalPerGramAmount = isPreciousMetal ? quantity * manufacturingFeePerGram : 0m;
@@ -186,7 +189,9 @@ public class TransactionService : ITransactionService
             // quantity = free shares (Stock) or cash amount (Cash)
             // For Stock dividend: NetAmount = 0 (no cash changes hands)
             // For Cash dividend: NetAmount = quantity (the cash received)
-            return (quantity, pricePerUnit, quantity, quantity);
+            return dividendKind == DividendKind.Stock
+                ? (quantity, pricePerUnit, 0m, 0m)
+                : (quantity, pricePerUnit, quantity, quantity);
         }
 
         if (!asset.IsDailyAccrualFund)

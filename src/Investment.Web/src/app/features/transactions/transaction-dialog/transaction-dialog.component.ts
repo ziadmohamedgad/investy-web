@@ -115,7 +115,11 @@ export class TransactionDialogComponent {
     }
 
     this.form.get('transactionDate')!.valueChanges.subscribe(() => this.refreshSellAvailability());
-    this.form.get('transactionType')!.valueChanges.subscribe(() => this.refreshSellAvailability());
+    this.form.get('transactionType')!.valueChanges.subscribe(() => {
+      this.refreshSellAvailability();
+      this.syncDividendMode();
+    });
+    this.form.get('dividendKind')!.valueChanges.subscribe(() => this.syncDividendMode());
 
     const assetQueryControl = this.form.get('assetQuery')!;
     (assetQueryControl.valueChanges as any).pipe(
@@ -263,12 +267,40 @@ export class TransactionDialogComponent {
     }, { emitEvent: false });
     this.syncDailyAccrualMode(asset.isDailyAccrualFund);
     this.syncMetalMode(asset.assetType === 'Gold' || asset.assetType === 'Silver');
+    this.syncDividendMode();
     this.refreshSellAvailability(asset);
   }
 
   displayAsset(asset?: ExternalAssetSearchResult | null): string {
     if (!asset) return '';
     return `${asset.assetCode} — ${asset.assetName}`;
+  }
+
+  private syncDividendMode(): void {
+    const type = this.form.get('transactionType')?.value;
+    const kind = this.form.get('dividendKind')?.value;
+    const isDividend = type === 'Dividend';
+    const isStockDividend = isDividend && kind === 'Stock';
+
+    const qtyControl = this.form.get('quantity');
+    if (qtyControl) {
+      if (isDividend) {
+        qtyControl.clearValidators();
+      } else {
+        qtyControl.setValidators([Validators.required, Validators.min(0.00000001)]);
+      }
+      qtyControl.updateValueAndValidity({ emitEvent: false });
+    }
+
+    const freeSharesControl = this.form.get('freeSharesQuantity');
+    if (freeSharesControl) {
+      if (isStockDividend) {
+        freeSharesControl.setValidators([Validators.required, Validators.min(0.00000001)]);
+      } else {
+        freeSharesControl.clearValidators();
+      }
+      freeSharesControl.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   private syncDailyAccrualMode(enabled: boolean): void {
