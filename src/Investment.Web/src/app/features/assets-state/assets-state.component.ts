@@ -19,11 +19,12 @@ import { EodhdApiKeyDialogComponent } from '../../shared/eodhd-api-key-dialog/eo
 import { Observable } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { forkJoin, of } from 'rxjs';
+import { ShortenNamePipe } from '../../shared/pipes/shorten-name.pipe';
 
 @Component({
   selector: 'app-assets-state',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatProgressSpinnerModule, MatSortModule, MatPaginatorModule, MatIconModule, MatButtonModule, MatTooltipModule, MatDialogModule],
+  imports: [CommonModule, MatTableModule, MatProgressSpinnerModule, MatSortModule, MatPaginatorModule, MatIconModule, MatButtonModule, MatTooltipModule, MatDialogModule, ShortenNamePipe],
   templateUrl: './assets-state.component.html',
   styleUrls: ['./assets-state.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -160,6 +161,9 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
         totalFeesPaid: summary.totalFeesPaid ?? 0,
         totalPaidIncludingFees: summary.totalPaidIncludingFees ?? (summary.totalCostBasis + (summary.totalFeesPaid ?? 0))
       }));
+      // Sort by market value (highest first) like the mobile app
+      this.summaries.sort((a, b) => (b.currentValue ?? 0) - (a.currentValue ?? 0));
+      
       this.syncPaginator(this.summaries.length);
       this.dataSource.data = this.summaries;
       this.refreshTable();

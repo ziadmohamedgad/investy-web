@@ -17,11 +17,12 @@ import { ConfirmDeleteDialogComponent } from '../../shared/confirm-delete-dialog
 import { BalanceVisibilityService } from '../../core/services/balance-visibility.service';
 import { catchError, finalize, switchMap, timeout } from 'rxjs/operators';
 import { forkJoin, Observable, of } from 'rxjs';
+import { ShortenNamePipe } from '../../shared/pipes/shorten-name.pipe';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule, MatDialogModule, MatPaginatorModule],
+  imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule, MatDialogModule, MatPaginatorModule, ShortenNamePipe],
   templateUrl: './transactions.component.html',
   styleUrl: './transactions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
