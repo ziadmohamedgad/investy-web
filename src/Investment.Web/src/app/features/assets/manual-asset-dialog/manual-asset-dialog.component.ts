@@ -191,12 +191,8 @@ export class ManualAssetDialogComponent implements OnInit {
     return this.form.get('assetType')?.value === 'DailyAccrualFund';
   }
 
-  get transactionTypeOptions(): { value: string; label: string; disabled?: boolean }[] {
-    const source = this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
-    return source.map((option) => ({
-      ...option,
-      disabled: option.value === 'Sell' && !this.sellAllowed
-    }));
+  get transactionTypeOptions(): { value: string; label: string }[] {
+    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
   }
 
   get isGoldSelected(): boolean {
