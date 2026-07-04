@@ -32,7 +32,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
   assetSummaries: AssetSummary[] = [];
   assetIdsWithBuy: number[] = [];
   dataSource = new MatTableDataSource<Transaction>([]);
-  pageSize = 7;
+  pageSize = 6;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   displayedColumns: string[] = ['date', 'asset', 'type', 'quantity', 'price', 'total', 'actions'];
   loading = true;

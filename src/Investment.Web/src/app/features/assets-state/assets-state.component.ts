@@ -34,7 +34,7 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
   loading = true;
   error: string | null = null;
   syncingAssetId: number | null = null;
-  pageSize = 7;
+  pageSize = 6;
   hideBalances$!: Observable<boolean>;
 
   dataSource = new MatTableDataSource<AssetSummary>([]);

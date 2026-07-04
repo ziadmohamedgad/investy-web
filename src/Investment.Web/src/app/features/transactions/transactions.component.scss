@@ -51,6 +51,11 @@
   padding: 2rem;
 }
 
+.table-scroll {
+  min-height: 575px;
+  overflow-x: auto;
+}
+
 .transactions-table {
   width: 100%;
   border-collapse: separate;
