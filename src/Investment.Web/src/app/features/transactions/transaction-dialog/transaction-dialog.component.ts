@@ -73,9 +73,6 @@ export class TransactionDialogComponent {
     private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
   ) {
-    private dialogRef: MatDialogRef<TransactionDialogComponent, CreateTransactionDraft | undefined>,
-    @Inject(MAT_DIALOG_DATA) public data: TransactionDialogData
-  ) {
     this.hideBalances$ = this.balanceVisibilityService.hidden$;
     this.form = this.fb.group({
       assetQuery: ['', [Validators.required]],
