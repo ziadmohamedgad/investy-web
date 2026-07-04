@@ -101,6 +101,9 @@ export class ManualAssetDialogComponent implements OnInit {
       this.syncDailyAccrualMode(isDailyAccrualFund);
       this.refreshSellAvailability();
     });
+    this.form.get('transactionType')!.valueChanges.subscribe(() => {
+      this.syncDailyAccrualMode(this.form.get('assetType')!.value === 'DailyAccrualFund');
+    });
     this.syncDailyAccrualMode(this.form.get('assetType')!.value === 'DailyAccrualFund');
     this.refreshSellAvailability();
 
@@ -155,10 +158,18 @@ export class ManualAssetDialogComponent implements OnInit {
       return;
     }
 
+    const isBuy = this.form.get('transactionType')?.value === 'Buy';
+
     if (enabled) {
       priceControl.clearValidators();
       priceControl.setValue(null, { emitEvent: false });
-      this.form.get('dailyAccrualAnnualRatePercent')?.setValidators([Validators.required, Validators.min(0)]);
+      
+      if (isBuy) {
+        this.form.get('dailyAccrualAnnualRatePercent')?.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        this.form.get('dailyAccrualAnnualRatePercent')?.clearValidators();
+        this.form.get('dailyAccrualAnnualRatePercent')?.setValue(null, { emitEvent: false });
+      }
     } else {
       priceControl.setValidators([Validators.required, Validators.min(0.00000001)]);
       if (!priceControl.value || Number(priceControl.value) <= 0) {

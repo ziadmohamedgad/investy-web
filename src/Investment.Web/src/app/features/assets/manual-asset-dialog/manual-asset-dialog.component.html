@@ -59,7 +59,7 @@
       </mat-form-field>
     </div>
 
-    <div class="row">
+    <div [class.row]="!isDailyAccrualFundSelected || (isDailyAccrualFundSelected && form.get('transactionType')?.value === 'Buy')">
       <mat-form-field appearance="outline" class="field">
         <mat-label>{{ quantityLabel }}</mat-label>
         <input matInput type="number" formControlName="quantity" step="0.0001" [max]="form.get('transactionType')?.value === 'Sell' ? availableSellAmount : null" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
@@ -76,7 +76,7 @@
         <mat-error *ngIf="form.get('pricePerUnit')?.hasError('required')">السعر مطلوب</mat-error>
       </mat-form-field>
 
-      <mat-form-field *ngIf="isDailyAccrualFundSelected" appearance="outline" class="field">
+      <mat-form-field *ngIf="isDailyAccrualFundSelected && form.get('transactionType')?.value === 'Buy'" appearance="outline" class="field">
         <mat-label>النسبة السنوية</mat-label>
         <input matInput type="number" formControlName="dailyAccrualAnnualRatePercent" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
         <mat-error *ngIf="form.get('dailyAccrualAnnualRatePercent')?.hasError('required')">النسبة مطلوبة</mat-error>
