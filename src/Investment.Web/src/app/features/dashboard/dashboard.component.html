@@ -17,22 +17,28 @@
   <div class="summary-cards">
     <div class="glass-panel summary-card">
       <div class="card-title">إجمالي المدفوع</div>
-      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalInvestedCapital | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <div class="card-value" dir="ltr" style="text-align: right;">
+        <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalInvestedCapital | currency:'EGP':'symbol':'1.2-2' }}</span>
+      </div>
       <mat-icon class="card-icon">savings</mat-icon>
     </div>
 
     <div class="glass-panel summary-card">
       <div class="card-title">إجمالي القيمة</div>
-      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalCurrentValue | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <div class="card-value" dir="ltr" style="text-align: right;">
+        <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalCurrentValue | currency:'EGP':'symbol':'1.2-2' }}</span>
+      </div>
       <mat-icon class="card-icon">account_balance_wallet</mat-icon>
     </div>
 
     <div class="glass-panel summary-card" [ngClass]="{'success': summaryTotals.totalUnrealizedPnL >= 0, 'danger': summaryTotals.totalUnrealizedPnL < 0}">
       <div class="card-title">الربح/الخسارة غير المحققة</div>
-      <div class="card-value d-flex align-items-center gap-1">
+      <div class="card-value" dir="ltr" style="text-align: right;">
         <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalUnrealizedPnL | currency:'EGP':'symbol':'1.2-2' }}</span>
-        <span [class.text-positive]="summaryTotals.totalUnrealizedPnL >= 0" [class.text-negative]="summaryTotals.totalUnrealizedPnL < 0" style="font-size: 1rem;">
-          (<span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalUnrealizedPnLPercent | number:'1.2-2' }}</span>%)
+      </div>
+      <div class="card-subtitle" dir="ltr" style="text-align: right; margin-top: -0.25rem;">
+        <span [class.text-positive]="summaryTotals.totalUnrealizedPnL >= 0" [class.text-negative]="summaryTotals.totalUnrealizedPnL < 0" style="font-size: 0.9rem; font-weight: 500;">
+          <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalUnrealizedPnLPercent > 0 ? '+' : ''}}{{ summaryTotals.totalUnrealizedPnLPercent | number:'1.2-2' }}</span>%
         </span>
       </div>
       <mat-icon class="card-icon">trending_up</mat-icon>
@@ -40,8 +46,23 @@
 
     <div class="glass-panel summary-card success">
       <div class="card-title">الربح/الخسارة المحققة</div>
-      <div class="card-value"><span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalRealizedPnL | currency:'EGP':'symbol':'1.2-2' }}</span></div>
+      <div class="card-value" dir="ltr" style="text-align: right;">
+        <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalRealizedPnL | currency:'EGP':'symbol':'1.2-2' }}</span>
+      </div>
       <mat-icon class="card-icon">monetization_on</mat-icon>
+    </div>
+
+    <div class="glass-panel summary-card" [ngClass]="{'success': summaryTotals.totalPnL >= 0, 'danger': summaryTotals.totalPnL < 0}">
+      <div class="card-title">صافي الربح/الخسارة</div>
+      <div class="card-value" dir="ltr" style="text-align: right;">
+        <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.totalPnL | currency:'EGP':'symbol':'1.2-2' }}</span>
+      </div>
+      <div class="card-subtitle" dir="ltr" style="text-align: right; margin-top: -0.25rem;">
+        <span [class.text-positive]="summaryTotals.totalPnL >= 0" [class.text-negative]="summaryTotals.totalPnL < 0" style="font-size: 0.9rem; font-weight: 500;">
+          <span class="balance-value" [class.is-hidden]="hideBalances$ | async">{{ summaryTotals.portfolioReturnSinceInception > 0 ? '+' : ''}}{{ summaryTotals.portfolioReturnSinceInception | number:'1.2-2' }}</span>%
+        </span>
+      </div>
+      <mat-icon class="card-icon">account_balance</mat-icon>
     </div>
   </div>
 

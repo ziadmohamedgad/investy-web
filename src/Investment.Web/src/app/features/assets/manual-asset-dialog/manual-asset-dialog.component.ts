@@ -83,7 +83,8 @@ export class ManualAssetDialogComponent implements OnInit {
       pricePerUnit: [null as unknown as number, [Validators.required, Validators.min(0.00000001)]],
       manufacturingFeePerGram: [null as unknown as number, [Validators.min(0)]],
       fees: [null as unknown as number, [Validators.min(0)]],
-      dailyAccrualAnnualRatePercent: [null as unknown as number, [Validators.min(0)]]
+      dailyAccrualAnnualRatePercent: [null as unknown as number, [Validators.min(0)]],
+      tcdOldRealizedReturns: [null as unknown as number, [Validators.min(0)]]
     });
   }
 
@@ -348,7 +349,8 @@ export class ManualAssetDialogComponent implements OnInit {
       pricePerUnit: isDailyAccrualFund ? 1 : Number(value.pricePerUnit),
       fees: baseFees,
       manufacturingFeePerGram,
-      dailyAccrualAnnualRatePercent: isDailyAccrualFund ? Number(value.dailyAccrualAnnualRatePercent ?? 0) : 0
+      dailyAccrualAnnualRatePercent: isDailyAccrualFund ? Number(value.dailyAccrualAnnualRatePercent ?? 0) : 0,
+      tcdOldRealizedReturns: Number(value.tcdOldRealizedReturns ?? 0)
     });
   }
 

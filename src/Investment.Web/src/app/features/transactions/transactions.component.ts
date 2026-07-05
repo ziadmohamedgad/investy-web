@@ -205,8 +205,8 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
         isDailyAccrualFund: result.isDailyAccrualFund,
         dailyAccrualAnnualRatePercent: result.isDailyAccrualFund ? (result.dailyAccrualAnnualRatePercent ?? 0) : 0
       }).pipe(
-        switchMap((asset) =>
-          this.transactionService.create({
+        switchMap((asset) => {
+          const firstTxn$ = this.transactionService.create({
             assetId: asset.assetId,
             transactionType: result.transactionType,
             transactionDate: result.transactionDate,
@@ -216,8 +216,25 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
             manufacturingFeePerGram: result.manufacturingFeePerGram,
             dividendKind: result.dividendKind,
             notes: result.notes
-          })
-        )
+          });
+
+          if (result.isDailyAccrualFund && (result.tcdOldRealizedReturns ?? 0) > 0) {
+            return firstTxn$.pipe(
+              switchMap(() => this.transactionService.create({
+                assetId: asset.assetId,
+                transactionType: 'Dividend',
+                transactionDate: result.transactionDate,
+                quantity: result.tcdOldRealizedReturns!,
+                pricePerUnit: 0,
+                fees: 0,
+                manufacturingFeePerGram: 0,
+                dividendKind: 'Cash',
+                notes: 'عائد محقق قديم تم إضافته يدوياً'
+              }))
+            );
+          }
+          return firstTxn$;
+        })
       ).subscribe({
         next: () => {
           this.showSuccess('تم إجراء العملية.');

@@ -413,7 +413,7 @@ public class AssetService : IAssetService
                 unitsHeld += units;
                 avgCost = unitsHeld > 0 ? (prevTotal + newTotal) / unitsHeld : 0;
             }
-            else
+            else if (txn.TransactionType == TransactionType.Sell)
             {
                 totalFeesPaid += feeAmount;
                 var saleProceeds = txn.TotalAmount - feeAmount;
@@ -421,6 +421,10 @@ public class AssetService : IAssetService
                 realizedCostBasis += soldCostBasis;
                 realizedPnL += saleProceeds - soldCostBasis;
                 unitsHeld -= units;
+            }
+            else if (txn.TransactionType == TransactionType.Dividend)
+            {
+                realizedPnL += txn.NetAmount;
             }
         }
 

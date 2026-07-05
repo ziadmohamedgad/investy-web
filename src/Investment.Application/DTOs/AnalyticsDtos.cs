@@ -62,6 +62,7 @@ public class PortfolioAnalyticsSummaryDto
     public decimal TotalRealizedPnL { get; set; }
     public decimal TotalFeesPaid { get; set; }
     public decimal PortfolioReturnSinceInception { get; set; }
+    public decimal TotalPnL { get; set; }
 }
 
 // Price Fetch DTOs

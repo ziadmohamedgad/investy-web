@@ -20,6 +20,8 @@ interface DashboardTotals {
   totalUnrealizedPnLPercent: number;
   totalRealizedPnL: number;
   totalFeesPaid: number;
+  portfolioReturnSinceInception: number;
+  totalPnL: number;
 }
 
 interface AssetTypeFilter {
@@ -274,6 +276,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const totalUnrealizedPnL = holdings.reduce((sum, holding) => sum + holding.unrealizedPnL, 0);
     const totalRealizedPnL = holdings.reduce((sum, holding) => sum + holding.realizedPnL, 0);
     const totalFeesPaid = holdings.reduce((sum, holding) => sum + holding.totalFeesPaid, 0);
+    const totalPnL = totalUnrealizedPnL + totalRealizedPnL;
 
     return {
       totalInvestedCapital,
@@ -281,7 +284,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       totalUnrealizedPnL,
       totalUnrealizedPnLPercent: totalInvestedCapital !== 0 ? (totalUnrealizedPnL / totalInvestedCapital) * 100 : 0,
       totalRealizedPnL,
-      totalFeesPaid
+      totalFeesPaid,
+      totalPnL,
+      portfolioReturnSinceInception: totalInvestedCapital !== 0 ? (totalPnL / totalInvestedCapital) * 100 : 0
     };
   }
 

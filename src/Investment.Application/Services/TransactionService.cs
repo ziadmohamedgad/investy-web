@@ -191,7 +191,7 @@ public class TransactionService : ITransactionService
             // For Cash dividend: NetAmount = quantity (the cash received)
             return dividendKind == DividendKind.Stock
                 ? (quantity, pricePerUnit, 0m, 0m)
-                : (quantity, pricePerUnit, quantity, quantity);
+                : (0m, 0m, quantity, quantity);
         }
 
         if (!asset.IsDailyAccrualFund)
@@ -276,7 +276,7 @@ public class TransactionService : ITransactionService
             if (transaction.TransactionType == TransactionType.Dividend)
             {
                 if (!hasBuy)
-                    throw new InvalidOperationException("لا يمكن تسجيل أرباح قبل وجود عملية شراء سابقة للسهم.");
+                    throw new InvalidOperationException("لا يمكن تسجيل أرباح قبل وجود عملية شراء سابقة لهذا الأصل.");
 
                 if (transaction.DividendKind == DividendKind.Stock)
                     unitsHeld += transaction.Quantity;

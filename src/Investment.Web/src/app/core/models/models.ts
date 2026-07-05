@@ -103,6 +103,7 @@ export interface CreateManualAssetDraft {
   manufacturingFeePerGram: number;
   dividendKind?: string;
   dailyAccrualAnnualRatePercent?: number;
+  tcdOldRealizedReturns?: number;
 }
 
 export interface SetAssetCurrentPrice {
@@ -255,6 +256,7 @@ export interface PortfolioAnalyticsSummary {
   totalRealizedPnL: number;
   totalFeesPaid: number;
   portfolioReturnSinceInception: number;
+  totalPnL: number;
 }
 
 export interface PriceFetchStatus {

@@ -152,8 +152,15 @@ export class TransactionDialogComponent {
     return this.data.mode === 'edit';
   }
 
+  private readonly _dailyAccrualTypesWithDividend = [
+    ...this.dailyAccrualTransactionTypes,
+    { value: 'Dividend', label: 'عائد قديم' }
+  ];
+
   get currentTransactionTypes(): { value: string; label: string }[] {
-    return this.isDailyAccrualFundSelected ? this.dailyAccrualTransactionTypes : this.transactionTypes;
+    return this.isDailyAccrualFundSelected 
+      ? this._dailyAccrualTypesWithDividend
+      : this.transactionTypes;
   }
 
   @HostListener('document:keydown', ['$event'])

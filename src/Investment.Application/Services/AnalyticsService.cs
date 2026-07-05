@@ -217,6 +217,7 @@ public class AnalyticsService : IAnalyticsService
             TotalFeesPaid = Math.Round(totalFees, 2),
             PortfolioReturnSinceInception = totalInvested != 0
                 ? Math.Round(totalReturnSinceInception / totalInvested * 100, 2) : 0,
+            TotalPnL = Math.Round(totalReturnSinceInception, 2)
         };
     }
 }

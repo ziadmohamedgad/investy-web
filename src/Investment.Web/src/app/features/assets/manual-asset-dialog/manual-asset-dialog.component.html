@@ -81,6 +81,11 @@
         <input matInput type="number" formControlName="dailyAccrualAnnualRatePercent" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
         <mat-error *ngIf="form.get('dailyAccrualAnnualRatePercent')?.hasError('required')">النسبة مطلوبة</mat-error>
       </mat-form-field>
+
+      <mat-form-field *ngIf="isDailyAccrualFundSelected && form.get('transactionType')?.value === 'Buy'" appearance="outline" class="field">
+        <mat-label>عائد محقق قديم (اختياري)</mat-label>
+        <input matInput type="number" formControlName="tcdOldRealizedReturns" step="0.01" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+      </mat-form-field>
     </div>
 
     <div [class.row]="isMetalSelected">
