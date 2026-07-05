@@ -440,7 +440,10 @@ export class TransactionsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   transactionTypeLabel(transaction: Transaction): string {
     if (transaction.isDailyAccrualFund) {
-      return transaction.transactionType === 'Buy' ? 'إيداع' : transaction.transactionType === 'Sell' ? 'سحب' : transaction.transactionType;
+      return transaction.transactionType === 'Buy' ? 'إيداع' : 
+             transaction.transactionType === 'Sell' ? 'سحب' : 
+             transaction.transactionType === 'Dividend' ? 'عائد قديم' : 
+             transaction.transactionType;
     }
 
     if (transaction.transactionType === 'Dividend') {

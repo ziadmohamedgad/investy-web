@@ -304,12 +304,17 @@ public class ExcelExportService : IExcelExportService
 
     private static string TransactionTypeLabel(TransactionDto t)
     {
-        var isTcd = t.IsDailyAccrualFund;
+        if (t.IsDailyAccrualFund)
+            return t.TransactionType switch
+            {
+                "Buy" => "إيداع",
+                "Sell" => "سحب",
+                "Dividend" => "عائد قديم",
+                _ => t.TransactionType
+            };
         return t.TransactionType switch
         {
             "Dividend" => "أرباح",
-            "Buy" when isTcd => "إيداع",
-            "Sell" when isTcd => "سحب",
             "Buy" => "شراء",
             "Sell" => "بيع",
             _ => t.TransactionType

@@ -47,7 +47,7 @@
       <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic">
         <mat-label>النوع</mat-label>
         <mat-select formControlName="transactionType">
-          <mat-option *ngFor="let t of transactionTypeOptions" [value]="t.value" [disabled]="t.value === 'Sell' && !sellAllowed">{{ t.label }}</mat-option>
+          <mat-option *ngFor="let t of transactionTypeOptions" [value]="t.value" [disabled]="(t.value === 'Sell' || t.value === 'Dividend') && !sellAllowed">{{ t.label }}</mat-option>
         </mat-select>
         <mat-hint *ngIf="sellBlockedHint">{{ sellBlockedHint }}</mat-hint>
       </mat-form-field>

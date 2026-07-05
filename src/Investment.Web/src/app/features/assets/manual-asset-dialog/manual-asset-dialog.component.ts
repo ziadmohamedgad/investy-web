@@ -51,7 +51,8 @@ export class ManualAssetDialogComponent implements OnInit {
 
   readonly dailyAccrualTransactionTypes = [
     { value: 'Buy', label: 'إيداع' },
-    { value: 'Sell', label: 'سحب' }
+    { value: 'Sell', label: 'سحب' },
+    { value: 'Dividend', label: 'عائد قديم' }
   ];
 
   readonly currencies = ['EGP', 'USD', 'EUR'];
@@ -242,7 +243,7 @@ export class ManualAssetDialogComponent implements OnInit {
     }
 
     return this.isDailyAccrualFundSelected
-      ? 'السحب متاح فقط بعد إيداع مسبق.'
+      ? 'السحب والعوائد متاحة فقط بعد إيداع مسبق.'
       : 'البيع متاح فقط بعد شراء مسبق.';
   }
 
