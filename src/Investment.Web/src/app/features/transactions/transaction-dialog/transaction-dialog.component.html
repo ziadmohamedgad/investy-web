@@ -30,10 +30,6 @@
 
     <div class="row" *ngIf="!isDividendSelected">
       <mat-form-field appearance="outline" class="field">
-    </div>
-
-    <div class="row" *ngIf="!isDividendSelected">
-      <mat-form-field appearance="outline" class="field">
         <mat-label>{{ quantityLabel }}</mat-label>
         <input matInput type="number" formControlName="quantity" step="0.0001" [max]="form.get('transactionType')?.value === 'Sell' ? availableSellAmount : null" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
         <mat-hint *ngIf="form.get('transactionType')?.value === 'Sell' && sellAllowed">المتاح: {{ availableSellLabel }}</mat-hint>
