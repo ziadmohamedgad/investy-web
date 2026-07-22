@@ -1,0 +1,9 @@
+diff a/src/Investment.Web/src/app/shared/eodhd-api-key-dialog/eodhd-api-key-dialog.component.ts b/src/Investment.Web/src/app/shared/eodhd-api-key-dialog/eodhd-api-key-dialog.component.ts	(rejected hunks)
+@@ -62,6 +62,7 @@
+           (click)="save()">
+           <mat-icon *ngIf="!saving">check</mat-icon>
+           <span>حفظ المفتاح</span>
++        </button>
+         <button *ngIf="!dialogRef.disableClose" mat-button class="dialog-action cancel-action" type="button" [disabled]="saving" (click)="cancel()">إلغاء</button>
+       </div>
+     </section>
