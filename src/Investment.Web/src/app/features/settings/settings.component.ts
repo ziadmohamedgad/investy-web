@@ -65,11 +65,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.message = 'جاري مزامنة الأسعار...';
     
     this.priceFetch.runFetch().subscribe({
-      next: () => {
+      next: (log) => {
         this.syncingPrices = false;
-        this.message = 'تم تحديث الأسعار بنجاح.';
-        this.loadStatus(); // تحديث بيانات المفتاح بعد המزامنة
-        setTimeout(() => this.message = '', 3000);
+        if (log?.errors) {
+          // Stale price or other issue reported by the server
+          this.message = log.errors;
+        } else {
+          this.message = `تم تحديث ${log?.assetsUpdated ?? 0} سعر بنجاح.`;
+        }
+        this.loadStatus();
+        setTimeout(() => this.message = '', 5000);
       },
       error: () => {
         this.syncingPrices = false;

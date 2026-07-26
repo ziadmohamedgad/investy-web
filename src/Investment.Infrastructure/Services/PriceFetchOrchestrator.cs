@@ -23,6 +23,15 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
         var sw = Stopwatch.StartNew();
         var errors = new List<string>();
         int assetsUpdated = 0;
+        bool staleDetected = false;
+
+        // Determine if today is a working day in Egypt (Sun-Thu) and before 8 PM
+        var cairoZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+        var cairoNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cairoZone);
+        var todayCairo = cairoNow.Date;
+        var dayOfWeek = cairoNow.DayOfWeek;
+        bool isWeekend = dayOfWeek == DayOfWeek.Friday || dayOfWeek == DayOfWeek.Saturday;
+        bool isBeforeEightPM = cairoNow.Hour < 20;
 
         using var scope = _serviceProvider.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
@@ -40,27 +49,42 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
             var assetsWithTickerList = assetsWithTicker.ToList();
             var prices = await eodhdFetcher.FetchPricesAsync(assetsWithTickerList);
 
-            foreach (var (assetId, price, date) in prices)
-            {
-                if (isIntraday)
-                {
-                    var lastPrice = await unitOfWork.Prices.GetLastPriceForAssetOnDateAsync(assetId, date);
-                    if (lastPrice != null && lastPrice.PriceValue == price)
-                        continue;
-                }
+            var pricesList = prices.ToList();
 
-                await unitOfWork.Prices.AddAsync(new Price
+            // On working days before 8 PM: check the first result — if stale, abort saving entirely
+            if (!isWeekend && isBeforeEightPM && pricesList.Count > 0 && pricesList[0].Date.Date < todayCairo)
+            {
+                staleDetected = true;
+                _logger.LogInformation("Stale price detected for first asset (date: {Date}, today: {Today}). Skipping all saves.", pricesList[0].Date.Date, todayCairo);
+            }
+            else
+            {
+                foreach (var (assetId, price, date) in pricesList)
                 {
-                    AssetId = assetId,
-                    PriceDate = date,
-                    PriceValue = price,
-                    Source = PriceSource.EODHD,
-                    CreatedAt = DateTime.UtcNow
-                });
-                assetsUpdated++;
+                    if (isIntraday)
+                    {
+                        var lastPrice = await unitOfWork.Prices.GetLastPriceForAssetOnDateAsync(assetId, date);
+                        if (lastPrice != null && lastPrice.PriceValue == price)
+                            continue;
+                    }
+
+                    await unitOfWork.Prices.AddAsync(new Price
+                    {
+                        AssetId = assetId,
+                        PriceDate = date,
+                        PriceValue = price,
+                        Source = PriceSource.EODHD,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    assetsUpdated++;
+                }
             }
 
             sw.Stop();
+
+            var staleNote = staleDetected
+                ? "EODHD لم يقم بتحديث أسعار جلسة اليوم بعد، يرجى الانتظار حتى الثامنة مساءً والمحاولة مرة أخرى"
+                : null;
 
             var log = new PriceFetchLog
             {
@@ -70,11 +94,13 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
                 TotalAssets = assetsWithTickerList.Count,
                 Success = true,
                 DurationMs = sw.Elapsed.TotalMilliseconds,
-                Errors = errors.Count > 0 ? string.Join("; ", errors) : null
+                Errors = errors.Count > 0
+                    ? string.Join("; ", errors) + (staleNote != null ? "; " + staleNote : null)
+                    : staleNote
             };
 
             await unitOfWork.PriceFetchLogs.AddAsync(log);
-            _logger.LogInformation("Price fetch completed. Updated {Count} assets in {Duration}ms", assetsUpdated, sw.Elapsed.TotalMilliseconds);
+            _logger.LogInformation("Price fetch completed. Updated {Count} assets. StaleDetected: {Stale}. Duration: {Duration}ms", assetsUpdated, staleDetected, sw.Elapsed.TotalMilliseconds);
             return log;
         }
         catch (Exception ex)

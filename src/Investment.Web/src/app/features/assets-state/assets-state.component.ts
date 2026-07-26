@@ -274,9 +274,13 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
         this.loadSummaries(false);
         this.refresh.notify('prices:changed');
       },
-      error: () => {
+      error: (err) => {
         this.syncingAssetId = null;
-        this.error = 'تعذر مزامنة سعر الأصل.';
+        if (err.error && err.error.message) {
+          this.error = err.error.message;
+        } else {
+          this.error = 'تعذر مزامنة سعر الأصل.';
+        }
         this.cdr.markForCheck();
       }
     });

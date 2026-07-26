@@ -299,7 +299,10 @@ export class ManualAssetDialogComponent implements OnInit {
   }
 
   get submitLabel(): string {
-    const isBuy = this.form.get('transactionType')?.value === 'Buy';
+    const type = this.form.get('transactionType')?.value;
+    if (type === 'Dividend') return 'حفظ';
+
+    const isBuy = type === 'Buy';
     if (this.isDailyAccrualFundSelected) {
       return isBuy ? 'إيداع' : 'سحب';
     }
