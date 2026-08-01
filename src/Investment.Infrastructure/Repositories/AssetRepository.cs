@@ -78,11 +78,17 @@ public class AssetRepository : IAssetRepository
 
     public async Task<IEnumerable<Asset>> GetActiveStockAssetsWithTickerAsync()
     {
+        // Exclude fully-closed positions (net quantity ≈ 0) to avoid wasting API price-sync calls
         return await _context.Assets
             .Where(a => a.IsActive
                         && a.AssetType == AssetType.Stock
                         && a.ExternalTicker != null
-                        && a.ExternalTicker != "")
+                        && a.ExternalTicker != ""
+                        && _context.Transactions
+                            .Where(t => t.AssetId == a.AssetId)
+                            .Sum(t => t.TransactionType == TransactionType.Buy  ?  t.Quantity
+                                    : t.TransactionType == TransactionType.Sell ? -t.Quantity
+                                    : 0m) > 0.005m)
             .AsNoTracking()
             .ToListAsync();
     }
