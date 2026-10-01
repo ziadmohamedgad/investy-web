@@ -36,8 +36,8 @@ export class AssetService {
     return this.http.put<void>(`${this.apiUrl}/${assetId}/current-price`, request);
   }
 
-  syncCurrentPrice(assetId: number): Observable<{ price: number; date: Date }> {
-    return this.http.post<{ price: number; date: Date }>(`${this.apiUrl}/${assetId}/sync-price`, {});
+  syncCurrentPrice(assetId: number): Observable<{ price: number; date: Date; isToday: boolean }> {
+    return this.http.post<{ price: number; date: Date; isToday: boolean }>(`${this.apiUrl}/${assetId}/sync-price`, {});
   }
 
   updateFinancialSettings(assetId: number, request: AssetFinancialSettings): Observable<void> {

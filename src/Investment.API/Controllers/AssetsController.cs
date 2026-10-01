@@ -290,16 +290,8 @@ public class AssetsController : ControllerBase
         if (latest == null)
             return NotFound(new { message = "No latest price found for this asset." });
 
-        // Guard: on working days before 8 PM (Sun-Thu Cairo time), reject if EODHD hasn't updated for today yet
-        var cairoZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
-        var cairoNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cairoZone);
-        var todayCairo = cairoNow.Date;
-        var dayOfWeek = cairoNow.DayOfWeek;
-        bool isWeekend = dayOfWeek == DayOfWeek.Friday || dayOfWeek == DayOfWeek.Saturday;
-        bool isBeforeEightPM = cairoNow.Hour < 20;
-
-        if (!isWeekend && isBeforeEightPM && latest.Value.Date.Date < todayCairo)
-            return BadRequest(new { message = "يرجى الانتظار حتى الثامنة مساءً والمحاولة مرة أخرى للحصول على السعر الجديد" });
+        var cairoToday = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time")).Date;
 
         await _unitOfWork.Prices.AddAsync(new Price
         {
@@ -310,7 +302,8 @@ public class AssetsController : ControllerBase
             CreatedAt = DateTime.UtcNow
         });
 
-        return Ok(new { price = latest.Value.Price, date = latest.Value.Date });
+        bool isToday = latest.Value.Date.Date == cairoToday;
+        return Ok(new { price = latest.Value.Price, date = latest.Value.Date, isToday });
     }
 
     [HttpPut("{id:int}/financial-settings")]

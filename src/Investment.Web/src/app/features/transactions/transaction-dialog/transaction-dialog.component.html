@@ -58,9 +58,9 @@
       </mat-form-field>
 
       <mat-form-field *ngIf="form.get('dividendKind')?.value === 'Stock' && !isDailyAccrualFundSelected" appearance="outline" class="field">
-        <mat-label>عدد الأسهم المجانية</mat-label>
-        <input matInput type="number" formControlName="freeSharesQuantity" step="0.0001" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
-        <mat-error *ngIf="freeSharesInvalid">يجب إدخال عدد صحيح أكبر من الصفر</mat-error>
+        <mat-label>إجمالي عدد الأسهم المجانية</mat-label>
+        <input matInput type="number" formControlName="freeSharesQuantity" step="1" min="0" class="balance-value" [class.is-hidden]="hideBalances$ | async" />
+        <mat-error *ngIf="freeSharesInvalid">يجب إدخال عدد أكبر من الصفر</mat-error>
       </mat-form-field>
     </div>
 

@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AssetService } from '../../core/services/asset.service';
 import { EditAssetPriceDialogComponent } from '../assets/edit-asset-price-dialog/edit-asset-price-dialog.component';
 import { ConfirmDeleteDialogComponent } from '../../shared/confirm-delete-dialog/confirm-delete-dialog.component';
@@ -24,7 +25,7 @@ import { ShortenNamePipe } from '../../shared/pipes/shorten-name.pipe';
 @Component({
   selector: 'app-assets-state',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatProgressSpinnerModule, MatSortModule, MatPaginatorModule, MatIconModule, MatButtonModule, MatTooltipModule, MatDialogModule, ShortenNamePipe],
+  imports: [CommonModule, MatTableModule, MatProgressSpinnerModule, MatSortModule, MatPaginatorModule, MatIconModule, MatButtonModule, MatTooltipModule, MatDialogModule, MatSnackBarModule, ShortenNamePipe],
   templateUrl: './assets-state.component.html',
   styleUrls: ['./assets-state.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -49,7 +50,8 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
     private refresh: RefreshService,
     private dialog: MatDialog,
     private balanceVisibilityService: BalanceVisibilityService,
-    private priceProviders: PriceProvidersService
+    private priceProviders: PriceProvidersService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -269,18 +271,19 @@ export class AssetsStateComponent implements OnInit, AfterViewInit {
 
   private runAssetPriceSync(asset: AssetSummary): void {
     this.assetService.syncCurrentPrice(asset.assetId).subscribe({
-      next: () => {
+      next: (res) => {
         this.syncingAssetId = null;
         this.loadSummaries(false);
         this.refresh.notify('prices:changed');
+        const dateLabel = res.isToday
+          ? 'تاريخ اليوم'
+          : new Date(res.date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' });
+        this.snackBar.open(`تم مزامنة سعر ${asset.assetCode} حتى ${dateLabel}`, '', { duration: 4000 });
       },
       error: (err) => {
         this.syncingAssetId = null;
-        if (err.error && err.error.message) {
-          this.error = err.error.message;
-        } else {
-          this.error = 'تعذر مزامنة سعر الأصل.';
-        }
+        const msg = err?.error?.message ?? 'تعذر مزامنة سعر الأصل.';
+        this.snackBar.open(msg, '', { duration: 4000 });
         this.cdr.markForCheck();
       }
     });

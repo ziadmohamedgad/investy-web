@@ -106,7 +106,9 @@ export class TransactionDialogComponent {
         fees: this.data.transaction.fees ?? 0,
         dividendKind: this.data.transaction.dividendKind ?? 'Cash',
         dividendAmount: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Cash' ? this.data.transaction.netAmount : undefined,
-        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock' ? this.data.transaction.quantity / Math.max(1, (this.data.assetSummaries?.find(a => a.assetId === this.data.transaction!.assetId)?.totalUnitsHeld ?? 1) - this.data.transaction.quantity) : undefined,
+        freeSharesQuantity: this.data.transaction.transactionType === 'Dividend' && this.data.transaction.dividendKind === 'Stock'
+          ? this.data.transaction.quantity  // Load total free shares directly — no back-calculation
+          : undefined,
         notes: this.data.transaction.notes ?? ''
       });
       this.form.get('assetQuery')!.disable({ emitEvent: false });
@@ -195,13 +197,8 @@ export class TransactionDialogComponent {
 
     let stockDividendQuantity = 0;
     if (isStockDividend) {
-      const ratio = Number(value.freeSharesQuantity);
-      const summary = this.data.assetSummaries?.find((item) => item.assetCode === this.selectedAsset?.assetCode);
-      let baseUnits = summary?.totalUnitsHeld ?? 0;
-      if (this.isEditMode && this.data.transaction?.transactionType === 'Dividend' && this.data.transaction?.dividendKind === 'Stock') {
-        baseUnits -= this.data.transaction.quantity;
-      }
-      stockDividendQuantity = ratio * baseUnits;
+      // User enters total free shares directly — no ratio calculation needed
+      stockDividendQuantity = Number(value.freeSharesQuantity);
     }
 
     const quantity = isDividend 

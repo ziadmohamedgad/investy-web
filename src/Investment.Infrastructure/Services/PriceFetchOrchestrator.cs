@@ -23,15 +23,9 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
         var sw = Stopwatch.StartNew();
         var errors = new List<string>();
         int assetsUpdated = 0;
-        bool staleDetected = false;
 
-        // Determine if today is a working day in Egypt (Sun-Thu) and before 8 PM
-        var cairoZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
-        var cairoNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cairoZone);
-        var todayCairo = cairoNow.Date;
-        var dayOfWeek = cairoNow.DayOfWeek;
-        bool isWeekend = dayOfWeek == DayOfWeek.Friday || dayOfWeek == DayOfWeek.Saturday;
-        bool isBeforeEightPM = cairoNow.Hour < 20;
+        var cairoToday = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time")).Date;
 
         using var scope = _serviceProvider.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
@@ -50,41 +44,40 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
             var prices = await eodhdFetcher.FetchPricesAsync(assetsWithTickerList);
 
             var pricesList = prices.ToList();
+            DateTime? latestSyncedDate = null;
 
-            // On working days before 8 PM: check the first result — if stale, abort saving entirely
-            if (!isWeekend && isBeforeEightPM && pricesList.Count > 0 && pricesList[0].Date.Date < todayCairo)
+            foreach (var (assetId, price, date) in pricesList)
             {
-                staleDetected = true;
-                _logger.LogInformation("Stale price detected for first asset (date: {Date}, today: {Today}). Skipping all saves.", pricesList[0].Date.Date, todayCairo);
-            }
-            else
-            {
-                foreach (var (assetId, price, date) in pricesList)
+                if (isIntraday)
                 {
-                    if (isIntraday)
-                    {
-                        var lastPrice = await unitOfWork.Prices.GetLastPriceForAssetOnDateAsync(assetId, date);
-                        if (lastPrice != null && lastPrice.PriceValue == price)
-                            continue;
-                    }
-
-                    await unitOfWork.Prices.AddAsync(new Price
-                    {
-                        AssetId = assetId,
-                        PriceDate = date,
-                        PriceValue = price,
-                        Source = PriceSource.EODHD,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    assetsUpdated++;
+                    var lastPrice = await unitOfWork.Prices.GetLastPriceForAssetOnDateAsync(assetId, date);
+                    if (lastPrice != null && lastPrice.PriceValue == price)
+                        continue;
                 }
+
+                await unitOfWork.Prices.AddAsync(new Price
+                {
+                    AssetId = assetId,
+                    PriceDate = date,
+                    PriceValue = price,
+                    Source = PriceSource.EODHD,
+                    CreatedAt = DateTime.UtcNow
+                });
+                assetsUpdated++;
+
+                if (latestSyncedDate == null || date.Date > latestSyncedDate)
+                    latestSyncedDate = date.Date;
             }
 
             sw.Stop();
 
-            var staleNote = staleDetected
-                ? "EODHD لم يقم بتحديث أسعار جلسة اليوم بعد، يرجى الانتظار حتى الثامنة مساءً والمحاولة مرة أخرى"
-                : null;
+            string? syncedDateNote = null;
+            if (latestSyncedDate != null)
+            {
+                syncedDateNote = latestSyncedDate.Value.Date == cairoToday
+                    ? "تم مزامنة الأسعار حتى تاريخ اليوم"
+                    : $"تم مزامنة الأسعار حتى {latestSyncedDate.Value.ToString("dddd d/M/yyyy", new System.Globalization.CultureInfo("ar-EG"))}";
+            }
 
             var log = new PriceFetchLog
             {
@@ -95,12 +88,13 @@ public class PriceFetchOrchestrator : IPriceFetchOrchestrator
                 Success = true,
                 DurationMs = sw.Elapsed.TotalMilliseconds,
                 Errors = errors.Count > 0
-                    ? string.Join("; ", errors) + (staleNote != null ? "; " + staleNote : null)
-                    : staleNote
+                    ? string.Join("; ", errors) + (syncedDateNote != null ? "; " + syncedDateNote : null)
+                    : syncedDateNote
             };
 
             await unitOfWork.PriceFetchLogs.AddAsync(log);
-            _logger.LogInformation("Price fetch completed. Updated {Count} assets. StaleDetected: {Stale}. Duration: {Duration}ms", assetsUpdated, staleDetected, sw.Elapsed.TotalMilliseconds);
+            _logger.LogInformation("Price fetch completed. Updated {Count} assets. SyncedDate: {Date}. Duration: {Duration}ms",
+                assetsUpdated, latestSyncedDate?.ToString("dd/MM/yyyy") ?? "none", sw.Elapsed.TotalMilliseconds);
             return log;
         }
         catch (Exception ex)
